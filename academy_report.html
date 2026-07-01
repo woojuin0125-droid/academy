@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학원 월말 리포트</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg:#FAF8F3;--card:#FFF;--border:#E6E1D6;--text:#232A3B;--muted:#9098A8;
+  --green:#2FAE76;--green-bg:#E4F7EE;--amber:#E8930A;--amber-bg:#FFF3DC;
+  --red:#C0392B;--red-bg:#FDEDED;--blue:#3B6FE0;--blue-bg:#E9EFFD;--teal:#0EA5A0;--teal-bg:#E0F7F6;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
+
+/* PIN */
+.pin-overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:flex;align-items:center;justify-content:center;z-index:200;}
+.pin-box{background:var(--card);border-radius:20px;padding:32px 28px;width:290px;box-shadow:0 8px 40px rgba(0,0,0,.18);}
+.pin-box h2{font-size:1.1rem;font-weight:800;margin-bottom:4px;}
+.pin-box p{font-size:.82rem;color:var(--muted);margin-bottom:18px;}
+.pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:18px;}
+.p-dot{width:13px;height:13px;border-radius:50%;background:var(--border);transition:background .2s;}
+.p-dot.filled{background:var(--green);}
+.pin-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.p-key{height:52px;border-radius:11px;background:var(--bg);border:1px solid var(--border);font-size:1.15rem;font-weight:700;cursor:pointer;transition:background .12s;}
+.p-key:active{background:var(--border);}
+.p-key.cancel{color:var(--muted);font-size:.9rem;}
+.pin-err{color:var(--red);font-size:.82rem;text-align:center;margin-top:8px;min-height:18px;}
+
+/* SCREEN */
+.screen{max-width:880px;margin:0 auto;padding:28px 20px 60px;}
+.screen-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:6px;}
+.screen-title{font-size:1.6rem;font-weight:900;}
+.screen-sub{font-size:.82rem;color:var(--muted);margin-bottom:20px;}
+.settings-btn{padding:7px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:.82rem;color:var(--muted);}
+.settings-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;}
+.s-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
+.s-row label{font-size:.8rem;color:var(--muted);white-space:nowrap;}
+.s-row input{flex:1;padding:8px 11px;border-radius:8px;border:1px solid var(--border);font-size:.88rem;background:var(--bg);}
+.s-row button{padding:8px 14px;background:var(--green);border:none;color:#fff;font-weight:700;border-radius:8px;cursor:pointer;font-size:.85rem;}
+.month-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.month-btn{padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text);}
+.month-btn.active{background:var(--green);border-color:var(--green);color:#fff;}
+.student-grid{display:flex;flex-direction:column;gap:20px;}
+
+/* REPORT CARD */
+.rc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 22px 18px;}
+.rc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.rc-stu .rc-name{font-size:1.2rem;font-weight:900;}
+.rc-stu .rc-meta{font-size:.8rem;color:var(--muted);margin-top:2px;}
+.rc-level{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;}
+.rc-level.low{background:var(--teal-bg);color:var(--teal);}
+.rc-level.high{background:var(--blue-bg);color:var(--blue);}
+.rc-btn{padding:8px 16px;background:var(--blue);border:none;color:#fff;font-weight:700;font-size:.85rem;border-radius:9px;cursor:pointer;}
+.stat-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.stat-box{flex:1;min-width:75px;background:var(--bg);border-radius:10px;padding:10px;text-align:center;}
+.stat-val{font-size:1.35rem;font-weight:900;}
+.stat-val.good{color:var(--green);}
+.stat-val.mid{color:var(--amber);}
+.stat-val.low{color:var(--red);}
+.stat-lbl{font-size:.7rem;color:var(--muted);margin-top:2px;}
+.sec{margin-bottom:16px;}
+.sec-title{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.rate-item{margin-bottom:8px;}
+.rate-top{display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:3px;}
+.rate-bar{height:7px;border-radius:4px;background:var(--border);overflow:hidden;}
+.rate-fill{height:100%;border-radius:4px;}
+.book-list{display:flex;flex-direction:column;gap:8px;}
+.book-item{background:var(--bg);border-radius:8px;padding:10px 12px;}
+.book-item-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.book-num{font-size:.75rem;font-weight:700;color:var(--blue);margin-right:4px;}
+.book-title{font-weight:600;font-size:.9rem;}
+.eval-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.eval-row label{font-size:.78rem;color:var(--muted);}
+.eval-score-inp{width:65px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);font-size:.88rem;text-align:center;}
+.eval-na-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-size:.78rem;cursor:pointer;}
+.eval-na-btn.active{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);font-weight:700;}
+.eval-saved{font-size:.78rem;font-weight:700;color:var(--green);}
+.comment-box{background:var(--green-bg);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:12px 14px;font-size:.88rem;line-height:1.7;}
+.ai-loading{color:var(--muted);font-size:.85rem;font-style:italic;}
+.no-data-msg{text-align:center;padding:40px;color:var(--muted);}
+
+/* PRINT */
+@media print{
+  body{background:#fff !important;}
+  .pin-overlay,.month-bar,.rc-btn,.screen-title,.screen-sub,.settings-btn,.settings-panel,.eval-row{display:none !important;}
+  .screen{padding:0;max-width:100%;}
+  .rc{break-inside:avoid;page-break-after:always;border:1px solid #ddd;box-shadow:none;margin:0;}
+  .rc:last-child{page-break-after:auto;}
+  .student-grid{gap:0;}
+}
+body.print-single .screen{display:none !important;}
+body.print-single .pin-overlay{display:none !important;}
+body.print-single .pt{display:block !important;}
+.pt{display:none;padding:28px;font-family:'Noto Sans KR',sans-serif;}
+.pt-header{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid var(--green);padding-bottom:12px;margin-bottom:20px;}
+.pt-logo{max-height:48px;max-width:140px;object-fit:contain;}
+.pt-header-right{text-align:right;}
+.pt-title{font-size:1.3rem;font-weight:900;}
+.pt-month{font-size:.85rem;color:var(--muted);}
+.pt-stu{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.pt-name{font-size:1.15rem;font-weight:900;}
+.pt-meta{font-size:.8rem;color:var(--muted);}
+.pt-stats{display:flex;gap:10px;margin-bottom:16px;}
+.pt-stat{flex:1;background:#f8f8f8;border-radius:8px;padding:10px;text-align:center;}
+.pt-stat .v{font-size:1.25rem;font-weight:900;}
+.pt-stat .l{font-size:.68rem;color:#888;margin-top:2px;}
+.pt-sec{margin-bottom:14px;}
+.pt-sec-title{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:7px;border-bottom:1px solid #eee;padding-bottom:4px;}
+.pt-rate-item{margin-bottom:7px;}
+.pt-rate-row{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:3px;}
+.pt-bar{height:6px;border-radius:4px;background:#eee;overflow:hidden;margin-bottom:2px;}
+.pt-bar-f{height:100%;border-radius:4px;}
+.pt-book-item{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 8px;background:#f8f8f8;border-radius:5px;margin-bottom:4px;}
+.pt-book-num{font-weight:700;color:var(--blue);margin-right:5px;}
+.pt-eval{color:#888;font-size:.78rem;}
+.pt-day-row{display:flex;gap:5px;margin-bottom:4px;}
+.pt-day-cell{flex:1;text-align:center;background:#f8f8f8;border-radius:6px;padding:6px 2px;}
+.pt-day-lbl{font-size:.65rem;color:#888;}
+.pt-day-cnt{font-size:.9rem;font-weight:700;}
+.pt-comment{background:#f0fdf8;border-left:3px solid var(--green);padding:10px 14px;font-size:.85rem;line-height:1.7;border-radius:0 6px 6px 0;margin-top:14px;}
+.pt-footer{margin-top:20px;padding-top:10px;border-top:1px solid #eee;font-size:.72rem;color:#aaa;text-align:right;}
+</style>
+</head>
+<body>
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <h2>🔒 리포트 확인</h2>
+    <p>관리자 PIN을 입력해주세요</p>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div class="pin-kp" id="pin-kp"></div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<div class="screen" id="main-screen" style="display:none;">
+  <div class="screen-top">
+    <div>
+      <div class="screen-title">📊 월말 리포트</div>
+      <div class="screen-sub">PDF 저장 후 에세이와 함께 학부모님께 전달하세요.</div>
+    </div>
+    <button class="settings-btn" onclick="toggleSettings()">⚙ 학원 설정</button>
+  </div>
+  <div id="settings-panel" style="display:none;"></div>
+  <div class="month-bar" id="month-bar"></div>
+  <div class="student-grid" id="student-grid"></div>
+</div>
+
+<div class="pt" id="pt"></div>
+
+<script>
+const FIREBASE="https://hakwoncheck-default-rtdb.firebaseio.com";
+const ADMIN_PIN='1234';
+const WD_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
+const WD_KO={mon:'월',tue:'화',wed:'수',thu:'목',fri:'금',sat:'토',sun:'일'};
+
+async function fbGet(p){try{const r=await fetch(`${FIREBASE}/${p}.json`);return await r.json();}catch{return null;}}
+async function fbSet(p,d){try{await fetch(`${FIREBASE}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});}catch{}}
+async function loadRoster(){const d=await fbGet('roster');return Array.isArray(d)?d.filter(Boolean):[];}
+async function loadAttendance(sid){const d=await fbGet(`attendance/${sid}`);return d&&typeof d==='object'?d:{};}
+async function loadBookEval(sid,month){const d=await fbGet(`bookeval/${sid}/${month}`);return d&&typeof d==='object'?d:{};}
+async function saveBookEval(sid,month,data){await fbSet(`bookeval/${sid}/${month}`,data);}
+async function loadSettings(){const d=await fbGet('settings');return d&&typeof d==='object'?d:{};}
+async function saveSettings(d){await fbSet('settings',d);}
+
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function rateColor(r){return r>=80?'var(--green)':r>=50?'var(--amber)':'var(--red)';}
+function rateClass(r){return r>=80?'good':r>=50?'mid':'low';}
+function monthLabel(m){if(!m)return'';const[y,mo]=m.split('-');return`${y}년 ${parseInt(mo)}월`;}
+
+/* PIN */
+let pinV='';
+function initPin(){
+  document.getElementById('pin-dots').innerHTML='<div class="p-dot"></div>'.repeat(ADMIN_PIN.length);
+  document.getElementById('pin-kp').innerHTML=[1,2,3,4,5,6,7,8,9,'취소',0,'⌫'].map(k=>`<button class="p-key ${k==='취소'?'cancel':''}" onclick="pinKey('${k}')">${k}</button>`).join('');
+}
+function pinKey(k){
+  if(k==='취소'){window.history.back();return;}
+  if(k==='⌫'){pinV=pinV.slice(0,-1);updDots();return;}
+  if(pinV.length>=ADMIN_PIN.length)return;
+  pinV+=k;updDots();
+  if(pinV.length===ADMIN_PIN.length){
+    if(pinV===ADMIN_PIN){document.getElementById('pin-overlay').style.display='none';document.getElementById('main-screen').style.display='block';loadReport();}
+    else{document.getElementById('pin-err').textContent='PIN이 틀렸습니다';setTimeout(()=>{pinV='';updDots();document.getElementById('pin-err').textContent='';},1000);}
+  }
+}
+function updDots(){document.querySelectorAll('.p-dot').forEach((d,i)=>d.classList.toggle('filled',i<pinV.length));}
+window.pinKey=pinKey;
+
+/* SETTINGS */
+let settingsOpen=false,settingsData={};
+function toggleSettings(){settingsOpen=!settingsOpen;document.getElementById('settings-panel').style.display=settingsOpen?'block':'none';if(settingsOpen)drawSettings();}
+function drawSettings(){
+  document.getElementById('settings-panel').innerHTML=`<div class="settings-panel">
+    <div class="s-row"><label>학원 이름</label><input id="s-name" value="${esc(settingsData.academyName||'')}" placeholder="예: 헬로우 English"></div>
+    <div class="s-row">
+      <label>학원 로고</label>
+      <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+        ${settingsData.logoUrl?`<img src="${esc(settingsData.logoUrl)}" style="max-height:60px;max-width:160px;object-fit:contain;border-radius:6px;border:1px solid var(--border);">`:''}
+        <input type="file" id="s-logo-file" accept="image/jpeg,image/jpg,image/png" style="font-size:.82rem;">
+        <div style="font-size:.72rem;color:var(--muted);">JPG, PNG 파일을 선택하세요. 선택 후 저장 버튼을 눌러주세요.</div>
+      </div>
+    </div>
+    <div class="s-row"><button onclick="saveSettingsNow()">저장</button></div>
+  </div>`;}
+
+async function saveSettingsNow(){
+  settingsData.academyName=(document.getElementById('s-name')?.value||'').trim();
+  const fileInput=document.getElementById('s-logo-file');
+  const file=fileInput?.files?.[0];
+  if(file){
+    // 파일을 base64로 변환해서 Firebase에 저장
+    const base64=await new Promise((res,rej)=>{
+      const reader=new FileReader();
+      reader.onload=e=>res(e.target.result);
+      reader.onerror=rej;
+      reader.readAsDataURL(file);
+    });
+    settingsData.logoUrl=base64;
+  }
+  await saveSettings(settingsData);
+  alert('저장되었습니다.');
+  drawSettings();
+}
+window.toggleSettings=toggleSettings;window.saveSettingsNow=saveSettingsNow;
+
+/* REPORT */
+let allData=[],selectedMonth='';
+async function loadReport(){
+  settingsData=await loadSettings()||{};
+  const roster=await loadRoster();
+  allData=await Promise.all(roster.map(async stu=>{const att=await loadAttendance(stu.id);return{stu,att};}));
+  const months=[...new Set(allData.flatMap(({att})=>Object.values(att).map(v=>v.month||'').filter(Boolean)))].sort().reverse();
+  const cur=new Date().toISOString().slice(0,7);
+  if(!months.includes(cur))months.unshift(cur);
+  selectedMonth=months[0]||cur;
+  renderMonthBar(months);renderStudents();
+}
+
+function renderMonthBar(months){
+  document.getElementById('month-bar').innerHTML=months.map(m=>`<button class="month-btn ${m===selectedMonth?'active':''}" onclick="selMonth('${m}')">${monthLabel(m)}</button>`).join('');
+}
+window.selMonth=function(m){selectedMonth=m;document.querySelectorAll('.month-btn').forEach(b=>b.classList.toggle('active',b.textContent===monthLabel(m)));renderStudents();};
+
+async function renderStudents(){
+  const grid=document.getElementById('student-grid');
+  const cards=await Promise.all(allData.map(({stu,att})=>buildCard(stu,att)));
+  const valid=cards.filter(Boolean);
+  grid.innerHTML=valid.length?valid.join(''):`<div class="no-data-msg">${monthLabel(selectedMonth)} 출석 데이터가 없습니다.</div>`;
+}
+
+async function buildCard(stu,att){
+  const days=Object.entries(att).filter(([,v])=>v.month===selectedMonth);
+  if(!days.length)return null;
+  const attended=days.length;
+  const mTotal=days.reduce((s,[,v])=>s+(v.missionsTotal||0),0);
+  const mDone=days.reduce((s,[,v])=>s+(v.missionsDone||0),0);
+  const mRate=mTotal?Math.round(mDone/mTotal*100):null;
+  const level=days[0]?.[1]?.level||stu.level||'저학년';
+  const isHigh=level==='고학년';
+
+  // 항목별 집계 (parentLabel 기준)
+  const itemMap={};
+  days.forEach(([,v])=>(v.missions||[]).forEach(m=>{
+    const lbl=(m.parentLabel&&m.parentLabel.trim())||m.text||'기타';
+    if(!itemMap[lbl])itemMap[lbl]={done:0,total:0};
+    itemMap[lbl].total++;if(m.done)itemMap[lbl].done++;
+  }));
+
+  // 점수 집계 (listening / vocabulary)
+  const scoreMap={listening:{scores:[],max:0},vocabulary:{scores:[],max:0}};
+  days.forEach(([,v])=>{
+    (v.scores?.listening||[]).forEach(s=>{scoreMap.listening.scores.push(s.score);scoreMap.listening.max=s.max||scoreMap.listening.max;});
+    (v.scores?.vocabulary||[]).forEach(s=>{scoreMap.vocabulary.scores.push(s.score);scoreMap.vocabulary.max=s.max||scoreMap.vocabulary.max;});
+  });
+  function avgRate(arr,max){if(!arr.length||!max)return null;return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length/max*100);}
+  const lisRate=avgRate(scoreMap.listening.scores,scoreMap.listening.max);
+  const vocRate=avgRate(scoreMap.vocabulary.scores,scoreMap.vocabulary.max);
+
+  // 도서 목록 (이달)
+  const allBooks={};
+  days.forEach(([,v])=>(v.books||[]).forEach(b=>{if(!allBooks[b.number])allBooks[b.number]={title:b.title,level:b.level,wordCount:b.wordCount||0,reviewEmoji:b.reviewEmoji||'',reviewText:b.reviewText||''};}));
+  const bookEntries=Object.entries(allBooks).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+  const monthlyWords=bookEntries.reduce((s,[,b])=>s+(b.wordCount||0),0);
+  const bookEval=await loadBookEval(stu.id,selectedMonth);
+
+  // 누적 (전체 기간)
+  const allDaysAll=Object.entries(att);
+  const cumBooks=new Set();
+  let cumWords=0;
+  allDaysAll.forEach(([,v])=>(v.books||[]).forEach(b=>{if(!cumBooks.has(b.number)){cumBooks.add(b.number);cumWords+=(b.wordCount||0);}}));
+
+  // 요일별 출석
+  const dayCounts={};WD_KEYS.forEach(k=>dayCounts[k]=0);
+  days.forEach(([dk])=>{const d=new Date(dk);const wk=WD_KEYS[d.getDay()];if(wk)dayCounts[wk]++;});
+  const dayOrder=['mon','tue','wed','thu','fri','sat','sun'];
+
+  const itemList=Object.entries(itemMap);
+
+  return`<div class="rc" id="rc-${stu.id}">
+    <div class="rc-top">
+      <div class="rc-stu">
+        <div class="rc-name">${esc(stu.name)}<span class="rc-level ${isHigh?'high':'low'}">${level}</span></div>
+        <div class="rc-meta">학번 ${esc(stu.number)} &nbsp;·&nbsp; ${monthLabel(selectedMonth)}</div>
+      </div>
+      <button class="rc-btn" onclick="printOne('${stu.id}')">📄 PDF 저장</button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val good">${attended}</div><div class="stat-lbl">출석일</div></div>
+      ${mTotal?`<div class="stat-box"><div class="stat-val">${mDone}/${mTotal}</div><div class="stat-lbl">미션 완료</div></div><div class="stat-box"><div class="stat-val ${rateClass(mRate)}">${mRate}%</div><div class="stat-lbl">완료율</div></div>`:''}
+      ${lisRate!==null?`<div class="stat-box"><div class="stat-val ${rateClass(lisRate)}">${lisRate}%</div><div class="stat-lbl">듣기 성취</div></div>`:''}
+      ${vocRate!==null?`<div class="stat-box"><div class="stat-val ${rateClass(vocRate)}">${vocRate}%</div><div class="stat-lbl">어휘 성취</div></div>`:''}
+    </div>
+
+    ${itemList.length?`<div class="sec"><div class="sec-title">${isHigh?'📖 학습 영역별 현황':'📖 학습 현황'}</div>
+      ${itemList.map(([lbl,{done,total}])=>{const r=Math.round(done/total*100);return`<div class="rate-item"><div class="rate-top"><span>${esc(lbl)}</span><span style="color:${rateColor(r)};font-weight:700;">${done}/${total}일 (${r}%)</span></div><div class="rate-bar"><div class="rate-fill" style="width:${r}%;background:${rateColor(r)}"></div></div></div>`;}).join('')}
+    </div>`:''}
+
+    ${bookEntries.length?`<div class="sec"><div class="sec-title">📚 이달의 독서 목록 ${monthlyWords?`<span style="font-weight:400;color:var(--muted);">· 이달 ${monthlyWords.toLocaleString()}어휘</span>`:''}</div>
+      <div class="book-list">
+        ${bookEntries.map(([num,b])=>{
+          const ev=bookEval[num]||{};
+          return`<div class="book-item">
+            <div class="book-item-top">
+              <span>
+                <span class="book-num">No.${esc(num)}</span>
+                <span class="book-title">${esc(b.title)}</span>
+                ${b.level?`<span style="font-size:.72rem;color:var(--amber);margin-left:4px;">${esc(b.level)}</span>`:''}
+                ${b.wordCount?`<span style="font-size:.72rem;color:var(--muted);margin-left:4px;">${parseInt(b.wordCount).toLocaleString()}어휘</span>`:''}
+              </span>
+              ${ev.na?`<span style="font-size:.78rem;color:var(--amber);font-weight:700;">해당없음</span>`:ev.score!=null?`<span style="font-size:.78rem;color:var(--green);font-weight:700;">권말평가 ${ev.score}점</span>`:''}
+            </div>
+            ${b.reviewEmoji?`<div style="font-size:.8rem;color:var(--muted);margin-top:4px;">${esc(b.reviewEmoji)} ${esc(b.reviewText)}</div>`:''}
+            <div class="eval-row">
+              <label>권말평가:</label>
+              <input type="number" class="eval-score-inp" id="ev-${stu.id}-${num}" value="${ev.score!=null?ev.score:''}" placeholder="점수">
+              <button class="eval-na-btn ${ev.na?'active':''}" onclick="toggleNA('${stu.id}','${num}')">해당없음</button>
+              <button onclick="saveEval('${stu.id}','${num}')" style="padding:4px 10px;background:var(--green);border:none;color:#fff;border-radius:6px;cursor:pointer;font-size:.78rem;">저장</button>
+              ${ev.na||ev.score!=null?`<span class="eval-saved">✓</span>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="margin-top:10px;padding:10px 14px;background:var(--blue-bg);border-radius:8px;font-size:.82rem;">
+        📊 <b>누적 독서</b> · 총 <b style="color:var(--blue)">${cumBooks.size}권</b> &nbsp;·&nbsp; 누적 어휘 <b style="color:var(--blue)">${cumWords.toLocaleString()}개</b>
+      </div>
+    </div>`:''}
+
+    <div class="sec">
+      <div class="sec-title">📅 요일별 출석</div>
+      <div style="display:flex;gap:6px;">
+        ${dayOrder.map(k=>`<div style="flex:1;text-align:center;background:var(--bg);border-radius:7px;padding:7px 2px;">
+          <div style="font-size:.68rem;color:var(--muted);">${WD_KO[k]}</div>
+          <div style="font-size:.95rem;font-weight:700;color:${dayCounts[k]>0?'var(--green)':'var(--border)'}">${dayCounts[k]>0?dayCounts[k]:'-'}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="comment-box ai-loading" id="comment-${stu.id}">✨ AI 코멘트 생성 중...</div>
+  </div>`;
+}
+
+async function generateComment(stu,attended,mRate,lisRate,vocRate,bookCount,level){
+  try{
+    const prompt=`당신은 영어학원 원장님을 대신해 학부모님께 보내는 월말 리포트 코멘트를 작성합니다.
+학생 정보:
+- 이름: ${stu.name}
+- 학년 구분: ${level}
+- 이번 달 출석일수: ${attended}일
+- 미션 완료율: ${mRate!=null?mRate+'%':'기록 없음'}
+- 영어 듣기 성취율: ${lisRate!=null?lisRate+'%':'해당없음'}
+- 어휘(단어) 성취율: ${vocRate!=null?vocRate+'%':'해당없음'}
+- 이번 달 읽은 책 권수: ${bookCount}권
+
+아래 조건에 맞게 2~3문장의 따뜻하고 긍정적인 코멘트를 한국어로 작성해주세요:
+1. 학생 이름을 자연스럽게 포함
+2. 구체적인 성취(출석, 점수 등)를 칭찬
+3. 미래 성장에 대한 응원으로 마무리
+4. 학부모님께 드리는 말투로 작성 (예: "~해 주셨습니다", "~기대됩니다")
+5. 이모지 없이 순수 텍스트로만
+코멘트만 출력하고 다른 설명은 하지 마세요.`;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    return data.content?.[0]?.text||'이번 달도 꾸준히 출석해 주셔서 감사합니다. 앞으로도 함께 성장해 나가겠습니다.';
+  }catch{return'이번 달도 꾸준히 출석해 주셔서 감사합니다. 앞으로도 함께 성장해 나가겠습니다.';}
+}
+
+// Generate AI comments after cards are rendered
+async function generateAllComments(){
+  for(const{stu,att} of allData){
+    const days=Object.entries(att).filter(([,v])=>v.month===selectedMonth);
+    if(!days.length)continue;
+    const el=document.getElementById(`comment-${stu.id}`);if(!el)continue;
+    const attended=days.length;
+    const mTotal=days.reduce((s,[,v])=>s+(v.missionsTotal||0),0);
+    const mDone=days.reduce((s,[,v])=>s+(v.missionsDone||0),0);
+    const mRate=mTotal?Math.round(mDone/mTotal*100):null;
+    const level=days[0]?.[1]?.level||stu.level||'저학년';
+    const scoreMap={listening:{scores:[],max:0},vocabulary:{scores:[],max:0}};
+    days.forEach(([,v])=>{
+      (v.scores?.listening||[]).forEach(s=>{scoreMap.listening.scores.push(s.score);scoreMap.listening.max=s.max||scoreMap.listening.max;});
+      (v.scores?.vocabulary||[]).forEach(s=>{scoreMap.vocabulary.scores.push(s.score);scoreMap.vocabulary.max=s.max||scoreMap.vocabulary.max;});
+    });
+    function avgRate(arr,max){if(!arr.length||!max)return null;return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length/max*100);}
+    const lisRate=avgRate(scoreMap.listening.scores,scoreMap.listening.max);
+    const vocRate=avgRate(scoreMap.vocabulary.scores,scoreMap.vocabulary.max);
+    const allBooks={};days.forEach(([,v])=>(v.books||[]).forEach(b=>{if(!allBooks[b.number])allBooks[b.number]=b.title;}));
+    const comment=await generateComment(stu,attended,mRate,lisRate,vocRate,Object.keys(allBooks).length,level);
+    el.textContent=comment;el.classList.remove('ai-loading');
+  }
+}
+
+// Override renderStudents to also generate comments
+const origRender=async()=>{
+  const grid=document.getElementById('student-grid');
+  const cards=await Promise.all(allData.map(({stu,att})=>buildCard(stu,att)));
+  const valid=cards.filter(Boolean);
+  grid.innerHTML=valid.length?valid.join(''):`<div class="no-data-msg">${monthLabel(selectedMonth)} 출석 데이터가 없습니다.</div>`;
+  if(valid.length)setTimeout(generateAllComments,100);
+  // Re-attach eval listeners
+  allData.forEach(({stu,att})=>{
+    const days=Object.entries(att).filter(([,v])=>v.month===selectedMonth);
+    if(!days.length)return;
+  });
+};
+window.renderStudents=origRender;
+async function renderStudents(){await origRender();}
+
+/* Book eval */
+let evalCache={};
+async function saveEval(stuId,bookNum){
+  const inp=document.getElementById(`ev-${stuId}-${bookNum}`);
+  const score=inp?.value!==''?parseInt(inp.value,10):null;
+  if(!evalCache[stuId])evalCache[stuId]={};
+  const cur=evalCache[stuId][bookNum]||{};
+  if(cur.na){evalCache[stuId][bookNum]={na:true};}
+  else{evalCache[stuId][bookNum]={score:score!==null&&!isNaN(score)?score:null};}
+  await saveBookEval(stuId,selectedMonth,evalCache[stuId]);
+  renderStudents();
+}
+async function toggleNA(stuId,bookNum){
+  if(!evalCache[stuId])evalCache[stuId]={};
+  const cur=evalCache[stuId][bookNum]||{};
+  evalCache[stuId][bookNum]=cur.na?{}:{na:true};
+  await saveBookEval(stuId,selectedMonth,evalCache[stuId]);
+  renderStudents();
+}
+window.saveEval=saveEval;window.toggleNA=toggleNA;
+
+/* Pre-load eval cache */
+const origLoadReport=loadReport;
+
+/* Print single */
+async function printOne(stuId){
+  const{stu,att}=allData.find(d=>d.stu.id===stuId)||{};if(!stu)return;
+  const days=Object.entries(att).filter(([,v])=>v.month===selectedMonth);
+  if(!days.length){alert('이달 데이터가 없습니다');return;}
+  const attended=days.length;
+  const mTotal=days.reduce((s,[,v])=>s+(v.missionsTotal||0),0);
+  const mDone=days.reduce((s,[,v])=>s+(v.missionsDone||0),0);
+  const mRate=mTotal?Math.round(mDone/mTotal*100):null;
+  const level=days[0]?.[1]?.level||stu.level||'저학년';
+  const isHigh=level==='고학년';
+
+  const itemMap={};
+  days.forEach(([,v])=>(v.missions||[]).forEach(m=>{const lbl=(m.parentLabel&&m.parentLabel.trim())||m.text||'기타';if(!itemMap[lbl])itemMap[lbl]={done:0,total:0};itemMap[lbl].total++;if(m.done)itemMap[lbl].done++;}));
+  const scoreMap={listening:{scores:[],max:0},vocabulary:{scores:[],max:0}};
+  days.forEach(([,v])=>{(v.scores?.listening||[]).forEach(s=>{scoreMap.listening.scores.push(s.score);scoreMap.listening.max=s.max||scoreMap.listening.max;});(v.scores?.vocabulary||[]).forEach(s=>{scoreMap.vocabulary.scores.push(s.score);scoreMap.vocabulary.max=s.max||scoreMap.vocabulary.max;});});
+  function avgRate(arr,max){if(!arr.length||!max)return null;return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length/max*100);}
+  const lisRate=avgRate(scoreMap.listening.scores,scoreMap.listening.max);
+  const vocRate=avgRate(scoreMap.vocabulary.scores,scoreMap.vocabulary.max);
+  const allBooks={};days.forEach(([,v])=>(v.books||[]).forEach(b=>{if(!allBooks[b.number])allBooks[b.number]={title:b.title,level:b.level,wordCount:b.wordCount||0,reviewEmoji:b.reviewEmoji||'',reviewText:b.reviewText||''};}));
+  const bookEntries=Object.entries(allBooks).sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+  const monthlyWords=bookEntries.reduce((s,[,b])=>s+(b.wordCount||0),0);
+  const bookEval=await loadBookEval(stu.id,selectedMonth);
+  const allDaysAll=Object.entries(att);
+  const cumBooksSet=new Set();let cumWords=0;
+  allDaysAll.forEach(([,v])=>(v.books||[]).forEach(b=>{if(!cumBooksSet.has(b.number)){cumBooksSet.add(b.number);cumWords+=(b.wordCount||0);}}));
+  const dayCounts={};WD_KEYS.forEach(k=>dayCounts[k]=0);days.forEach(([dk])=>{const d=new Date(dk);const wk=WD_KEYS[d.getDay()];if(wk)dayCounts[wk]++;});
+  const dayOrder=['mon','tue','wed','thu','fri','sat','sun'];
+  const itemList=Object.entries(itemMap);
+
+  // Get AI comment from rendered card or generate new
+  const commentEl=document.getElementById(`comment-${stuId}`);
+  const comment=commentEl&&!commentEl.classList.contains('ai-loading')?commentEl.textContent:await generateComment(stu,attended,mRate,lisRate,vocRate,bookEntries.length,level);
+
+  const logoHtml=settingsData.logoUrl?`<img src="${esc(settingsData.logoUrl)}" class="pt-logo" onerror="this.style.display='none'">`:'';
+  const acName=settingsData.academyName||'';
+
+  document.getElementById('pt').innerHTML=`
+    <div class="pt-header">
+      <div style="display:flex;align-items:center;gap:12px;">${logoHtml}<div style="font-size:1rem;font-weight:700;color:var(--muted);">${esc(acName)}</div></div>
+      <div class="pt-header-right"><div class="pt-title">${monthLabel(selectedMonth)} 학습 리포트</div><div class="pt-month">발행일: ${new Date().toLocaleDateString('ko-KR')}</div></div>
+    </div>
+    <div class="pt-stu">
+      <div class="pt-name">${esc(stu.name)}</div>
+      <div class="pt-meta">학번 ${esc(stu.number)} &nbsp;·&nbsp; ${level}</div>
+    </div>
+    <div class="pt-stats">
+      <div class="pt-stat"><div class="v">${attended}일</div><div class="l">출석일수</div></div>
+      ${mTotal?`<div class="pt-stat"><div class="v">${mRate}%</div><div class="l">미션 완료율</div></div>`:''}
+      ${lisRate!==null?`<div class="pt-stat"><div class="v" style="color:${rateColor(lisRate)}">${lisRate}%</div><div class="l">듣기 성취율</div></div>`:''}
+      ${vocRate!==null?`<div class="pt-stat"><div class="v" style="color:${rateColor(vocRate)}">${vocRate}%</div><div class="l">어휘 성취율</div></div>`:''}
+      ${bookEntries.length?`<div class="pt-stat"><div class="v">${bookEntries.length}권</div><div class="l">독서 권수</div></div>`:''}
+    </div>
+    ${itemList.length?`<div class="pt-sec"><div class="pt-sec-title">${isHigh?'학습 영역별 현황':'학습 현황'}</div>
+      ${itemList.map(([lbl,{done,total}])=>{const r=Math.round(done/total*100);return`<div class="pt-rate-item"><div class="pt-rate-row"><span>${esc(lbl)}</span><span style="color:${rateColor(r)};font-weight:700;">${done}/${total}일 (${r}%)</span></div><div class="pt-bar"><div class="pt-bar-f" style="width:${r}%;background:${rateColor(r)}"></div></div></div>`;}).join('')}
+    </div>`:''}
+    ${bookEntries.length?`<div class="pt-sec"><div class="pt-sec-title">이달의 독서 목록 ${monthlyWords?`· 이달 ${monthlyWords.toLocaleString()}어휘`:''}</div>
+      ${bookEntries.map(([num,b])=>{const ev=bookEval[num]||{};const evTxt=ev.na?'해당없음':ev.score!=null?`권말평가 ${ev.score}점`:'';return`<div class="pt-book-item"><div><span class="pt-book-num">No.${esc(num)}</span>${esc(b.title)}${b.level?` <span style="color:#E8930A;font-size:.75rem">${esc(b.level)}</span>`:''}${b.wordCount?` <span style="color:#888;font-size:.75rem">${parseInt(b.wordCount).toLocaleString()}어휘</span>`:''}${b.reviewEmoji?`<div style="font-size:.75rem;color:#888;margin-top:2px;">${esc(b.reviewEmoji)} ${esc(b.reviewText)}</div>`:''}</div><span class="pt-eval">${esc(evTxt)}</span></div>`;}).join('')}
+      <div style="margin-top:8px;padding:8px 12px;background:#EBF5FF;border-radius:6px;font-size:.8rem;">📊 누적 독서 · 총 <b style="color:var(--blue)">${cumBooksSet.size}권</b> &nbsp;·&nbsp; 누적 어휘 <b style="color:var(--blue)">${cumWords.toLocaleString()}개</b></div>
+    </div>`:''}
+    <div class="pt-sec"><div class="pt-sec-title">요일별 출석</div>
+      <div class="pt-day-row">${dayOrder.map(k=>`<div class="pt-day-cell"><div class="pt-day-lbl">${WD_KO[k]}</div><div class="pt-day-cnt" style="color:${dayCounts[k]>0?'var(--green)':'#ccc'}">${dayCounts[k]>0?dayCounts[k]:'-'}</div></div>`).join('')}</div>
+    </div>
+    <div class="pt-comment">${esc(comment)}</div>
+    <div class="pt-footer">${esc(acName)} &nbsp;|&nbsp; 본 리포트는 학원 출결 시스템에서 자동 생성되었습니다.</div>`;
+
+  document.body.classList.add('print-single');
+  window.print();
+  document.body.classList.remove('print-single');
+}
+window.printOne=printOne;
+
+initPin();
+</script>
+</body>
+</html>
