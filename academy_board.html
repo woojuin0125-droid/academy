@@ -797,6 +797,15 @@ function delMiss(sid,day,idx){
 /* ════════════════════════════════════════
    시작
 ════════════════════════════════════════ */
+// onclick에서 호출되는 모든 함수를 window에 명시적 등록
+window.setMode=setMode; window.toggleAdmin=toggleAdmin; window.doPinKey=doPinKey;
+window.onTC=onTC; window.addStu=addStu; window.delStu=delStu;
+window.togSched=togSched; window.setSched=setSched;
+window.togMiss=togMiss; window.addMiss=addMiss; window.delMiss=delMiss;
+window.kPress=kPress; window.kClear=kClear; window.kConfirm=kConfirm;
+window.toggleSM=toggleSM; window.submitScore=submitScore; window.undoSM=undoSM;
+window.addBook=addBook; window.removeBook=removeBook; window.selectReview=selectReview;
+window.stuCheckout=stuCheckout; window.closeCele=closeCele;
 cleanupOldSessions();
 render();
 </script>
