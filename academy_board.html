@@ -192,6 +192,20 @@ var FIREBASE = "https://hakwoncheck-default-rtdb.firebaseio.com";
 var WD_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
 var WD_LABELS = [['mon','월'],['tue','화'],['wed','수'],['thu','목'],['fri','금'],['sat','토'],['sun','일']];
 var ADMIN_PIN = '1234';
+var MISSION_CATEGORIES = [
+  {value:'phonics',     label:'Phonics'},
+  {value:'reading',     label:'Reading'},
+  {value:'writing',     label:'Writing'},
+  {value:'listening',   label:'Listening & Speaking'},
+  {value:'words',       label:'Words'},
+  {value:'grammar',     label:'Grammar'},
+  {value:'conversation',label:'Conversation'},
+  {value:'fluency',     label:'Fluency'},
+  {value:'essay',       label:'Essay'},
+  {value:'comprehension',label:'Comprehension'},
+  {value:'pronunciation',label:'Pronunciation'},
+  {value:'other',       label:'Other'}
+];
 var BOOK_REVIEWS = [
   {idx:1,emoji:'⭐',text:'재미있어서 친구에게 추천하고 싶어요'},
   {idx:2,emoji:'📚',text:'이 작가의 시리즈를 더 읽고 싶어요'},
@@ -229,14 +243,19 @@ function esc(s){ return String(s||'').replace(/[&<>"']/g,function(m){return({'&'
 function computeEnd(stu,start){
   if(stu.type==='m60') return start+60*60000;
   if(stu.type==='m90') return start+90*60000;
-  if((stu.type==='endtime'||stu.type==='mission')&&stu.endTimeVal){
-    var p=stu.endTimeVal.split(':'); var d=new Date(start); d.setHours(parseInt(p[0]),parseInt(p[1]),0,0); return d.getTime();
+  // 귀가시간 지정형 - 요일별 시간 우선, 없으면 공통 시간
+  if(stu.type==='endtime'||stu.type==='mission'){
+    var wdKey=todayWD();
+    var timeVal=(stu.endTimeByDay&&stu.endTimeByDay[wdKey])||stu.endTimeVal||'';
+    if(timeVal){
+      var p=timeVal.split(':'); var d=new Date(start); d.setHours(parseInt(p[0]),parseInt(p[1]),0,0); return d.getTime();
+    }
   }
   return start+60*60000;
 }
 function missionFromTemplate(m){
-  if(typeof m==='string') return {text:m,parentLabel:'',type:'check',scoreMax:0};
-  return {text:m.text||'',parentLabel:m.parentLabel||'',type:m.type||'check',scoreMax:parseInt(m.scoreMax||0,10)};
+  if(typeof m==='string') return {text:m,parentLabel:'',type:'check',scoreMax:0,category:'other'};
+  return {text:m.text||'',parentLabel:m.parentLabel||'',type:m.type||'check',scoreMax:parseInt(m.scoreMax||0,10),category:m.category||'other'};
 }
 function showToast(msg){
   var t=document.getElementById('toast'); if(!t) return;
@@ -455,7 +474,10 @@ function kConfirm(mode){
 /* ════════════════════════════════════════
    학생 미션 화면
 ════════════════════════════════════════ */
+var missionScreenTimer=null;
+
 function renderStudentMission(sid){
+  if(missionScreenTimer){clearInterval(missionScreenTimer);missionScreenTimer=null;}
   Promise.all([loadRoster(),loadSessions(),loadBookLibrary()]).then(function(res){
     var roster=res[0]; var sessions=res[1]; bookLibCache=res[2]||{};
     var stu=roster.find(function(s){return s.id===sid;});
@@ -476,12 +498,46 @@ function renderStudentMission(sid){
     var books=sess.books||[];
     var todayKO=['일','월','화','수','목','금','토'][new Date().getDay()]+'요일';
 
+    // 카테고리별 그룹핑
+    var catMap={};
+    ms.forEach(function(m,i){
+      var cat=m.category||'other';
+      if(!catMap[cat]) catMap[cat]=[];
+      catMap[cat].push({m:m,i:i});
+    });
+
     var html='<div class="topbar"><div class="brand"><span class="dot"></span><span class="brand-text">내 미션</span></div><div class="back-link" onclick="setMode(\'student\')">← 돌아가기</div></div>'+
-      '<div class="ms-wrap"><div class="ms-hero"><div class="ms-name">👋 '+esc(stu.name)+'</div><div class="ms-sub">예상 귀가 '+fmtTs(sess.endTime)+' &nbsp;·&nbsp; 미션을 모두 완료해요!</div></div>';
+      '<div class="ms-wrap">'+
+      '<div class="ms-hero"><div class="ms-name">👋 '+esc(stu.name)+'</div>'+
+      '<div class="ms-sub">예상 귀가 '+fmtTs(sess.endTime)+'</div></div>'+
+
+      // 타이머 + 진행률 헤더
+      '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'+
+      '<div><div style="font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">남은 시간</div>'+
+      '<div id="ms-timer" style="font-size:2rem;font-weight:900;font-family:\'Space Grotesk\',monospace;color:var(--text);">--:--</div></div>'+
+      '<div style="text-align:right;"><div style="font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;">미션 완료율</div>'+
+      '<div style="font-size:2rem;font-weight:900;color:var(--green);">'+pct+'%</div></div></div>'+
+      '<div style="height:8px;border-radius:6px;background:var(--border);overflow:hidden;">'+
+      '<div style="height:100%;width:'+pct+'%;background:var(--green);border-radius:6px;transition:width .4s;"></div></div>'+
+      '<div style="font-size:.78rem;color:var(--muted);margin-top:6px;text-align:center;">'+mDone+'/'+ms.length+'개 완료</div>'+
+      '</div>';
 
     if(ms.length){
-      html+='<div class="ms-progress"><div class="ms-prog-bar"><div class="ms-prog-fill" style="width:'+pct+'%"></div></div><div class="ms-prog-txt">'+mDone+'/'+ms.length+'</div></div>';
-      html+='<div class="m-list">'+ms.map(function(m,i){ return renderMItem(m,i,sid); }).join('')+'</div>';
+      // 카테고리별로 표시
+      var catOrder=['phonics','reading','writing','listening','words','grammar','conversation','fluency','essay','comprehension','pronunciation','other'];
+      var renderedCats=false;
+      catOrder.forEach(function(cat){
+        if(!catMap[cat]) return;
+        renderedCats=true;
+        var catInfo=MISSION_CATEGORIES.find(function(c){return c.value===cat;})||{label:'Other'};
+        html+='<div style="margin-bottom:14px;">'+
+          '<div style="font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;padding-left:4px;">'+catInfo.label+'</div>'+
+          '<div class="m-list">'+catMap[cat].map(function(item){ return renderMItem(item.m,item.i,sid); }).join('')+'</div></div>';
+      });
+      if(!renderedCats){
+        html+='<div class="m-list">'+ms.map(function(m,i){ return renderMItem(m,i,sid); }).join('')+'</div>';
+      }
     } else {
       html+='<div style="color:var(--muted);text-align:center;padding:24px 0;line-height:1.8;"><div style="font-size:1.2rem;margin-bottom:6px;">📭</div>오늘('+todayKO+') 등록된 미션이 없어요.</div>';
     }
@@ -498,6 +554,18 @@ function renderStudentMission(sid){
     html+='<button class="btn-checkout" onclick="stuCheckout(\''+sid+'\')">🏠 하원 처리</button></div>';
 
     document.getElementById('root').innerHTML=html;
+
+    // 타이머 업데이트
+    function updateTimer(){
+      var el=document.getElementById('ms-timer'); if(!el) return;
+      var rem=(sess.endTime-Date.now())/1000;
+      if(rem<=0){ el.textContent='00:00'; el.style.color='var(--blue)'; }
+      else if(rem<=300){ el.textContent=fmtTimer(rem); el.style.color='var(--amber)'; }
+      else{ el.textContent=fmtTimer(rem); el.style.color='var(--text)'; }
+    }
+    updateTimer();
+    missionScreenTimer=setInterval(updateTimer,1000);
+
     if(allDone) showCelebration(stu.name,sid);
   });
 }
@@ -741,9 +809,20 @@ function delStu(id){
 function togSched(id){schedOpen[id]=!schedOpen[id];drawAdmin();}
 function togMiss(id){missOpen[id]=!missOpen[id];drawAdmin();}
 function drawSchedRow(s){
-  return '<div class="exp-panel"><div class="sched-row">'+
-    WD_LABELS.map(function(kl){return '<label class="sched-cell"><span style="font-weight:700;">'+kl[1]+'요일</span><input type="time" value="'+((s.schedule&&s.schedule[kl[0]])||'')+'" onchange="setSched(\''+s.id+'\',\''+kl[0]+'\',this.value)"></label>';}).join('')+
-    '<div style="flex-basis:100%;font-size:.68rem;color:var(--muted);margin-top:3px;">등원 안 하는 요일은 비워두세요.</div></div></div>';
+  // 등원 시간표
+  var schedHtml='<div style="margin-bottom:10px;"><div style="font-size:.74rem;font-weight:700;color:var(--muted);margin-bottom:6px;">📍 등원 시간표 (5분 지나면 미등원 알림)</div>'+
+    '<div class="sched-row">'+
+    WD_LABELS.map(function(kl){return '<label class="sched-cell"><span style="font-weight:700;">'+kl[1]+'</span><input type="time" value="'+((s.schedule&&s.schedule[kl[0]])||'')+'" onchange="setSched(\''+s.id+'\',\''+kl[0]+'\',this.value)"></label>';}).join('')+
+    '</div></div>';
+  // 귀가 시간표 (귀가시간 지정형 + 미션형만)
+  var endHtml='';
+  if(s.type==='endtime'||s.type==='mission'){
+    endHtml='<div><div style="font-size:.74rem;font-weight:700;color:var(--amber);margin-bottom:6px;">🏠 요일별 귀가 시간 (비우면 공통 시간 사용)</div>'+
+      '<div class="sched-row">'+
+      WD_LABELS.map(function(kl){return '<label class="sched-cell"><span style="font-weight:700;">'+kl[1]+'</span><input type="time" value="'+((s.endTimeByDay&&s.endTimeByDay[kl[0]])||'')+'" onchange="setEndTime(\''+s.id+'\',\''+kl[0]+'\',this.value)"></label>';}).join('')+
+      '</div></div>';
+  }
+  return '<div class="exp-panel">'+schedHtml+endHtml+'</div>';
 }
 function setSched(id,k,v){
   var s=padRoster.find(function(x){return x.id===id;}); if(!s) return;
@@ -751,40 +830,52 @@ function setSched(id,k,v){
   s.schedule[k]=v||'';
   saveRoster(padRoster).then(function(){showToast('저장됨');});
 }
+function setEndTime(id,k,v){
+  var s=padRoster.find(function(x){return x.id===id;}); if(!s) return;
+  if(!s.endTimeByDay) s.endTimeByDay={};
+  s.endTimeByDay[k]=v||'';
+  saveRoster(padRoster).then(function(){showToast('귀가시간 저장됨');});
+}
 function drawMissPanel(s){
   var mb=s.missions||{};
-  var typeOpts='<option value="check">일반 체크</option><option value="listening">듣기 점수</option><option value="vocabulary">단어 점수</option>';
+  var catOpts=MISSION_CATEGORIES.map(function(c){return '<option value="'+c.value+'">'+c.label+'</option>';}).join('');
+  var typeOpts='<option value="check">체크</option><option value="listening">듣기점수</option><option value="vocabulary">단어점수</option>';
   return '<div class="exp-panel"><div class="sec-title" style="margin-top:0;">요일별 미션 (매주 반복)</div>'+
+    '<div style="font-size:.72rem;color:var(--muted);margin-bottom:8px;background:var(--blue-bg);padding:8px 10px;border-radius:6px;">💡 <b>Category</b>는 학부모 리포트에 영어로 표시됩니다. 학생은 <b>세부 미션명</b>을 봅니다.</div>'+
     WD_LABELS.map(function(kl){
       var k=kl[0]; var l=kl[1];
       var items=(mb[k]||[]).map(function(m,i){
-        var tm=typeof m==='object'?m:{text:m,parentLabel:'',type:'check',scoreMax:0};
-        var typeKo={check:'체크',listening:'듣기',vocabulary:'단어'}[tm.type]||'체크';
-        return '<div class="m-tmpl-item"><span><span style="font-size:.7rem;background:var(--blue-bg);color:var(--blue);border-radius:4px;padding:1px 5px;margin-right:4px;">'+typeKo+'</span>'+
-          '<b>'+esc(tm.text)+'</b>'+(tm.parentLabel?' <span style="color:var(--muted);font-size:.76rem;">→ '+esc(tm.parentLabel)+'</span>':'')+
+        var tm=typeof m==='object'?m:{text:m,parentLabel:'',type:'check',scoreMax:0,category:'other'};
+        var catLabel=(MISSION_CATEGORIES.find(function(c){return c.value===(tm.category||'other');})||{label:'Other'}).label;
+        return '<div class="m-tmpl-item">'+
+          '<span><span style="font-size:.7rem;background:var(--blue-bg);color:var(--blue);border-radius:4px;padding:1px 6px;margin-right:4px;">'+catLabel+'</span>'+
+          '<b>'+esc(tm.text)+'</b>'+
           (tm.scoreMax?' <span style="color:var(--muted);font-size:.76rem;">/'+tm.scoreMax+'점</span>':'')+'</span>'+
           '<button class="mi-del" onclick="delMiss(\''+s.id+'\',\''+k+'\','+i+')">✕</button></div>';
       }).join('')||'<div style="color:var(--muted);font-size:.78rem;margin-bottom:4px;">미션 없음</div>';
       return '<div class="m-day-block"><div class="m-day-lbl">'+l+'요일</div>'+items+
         '<div class="m-add-area"><div class="m-add-label">새 미션 추가</div>'+
-        '<div class="m-add-row" style="margin-bottom:5px;"><select id="mt-'+s.id+'-'+k+'" style="max-width:100px;">'+typeOpts+'</select>'+
-        '<input type="text" placeholder="미션 이름 (내부용)" id="mi-'+s.id+'-'+k+'"></div>'+
-        '<div class="m-add-row"><input type="text" placeholder="학부모 표시명 (선택)" id="mi-pl-'+s.id+'-'+k+'">'+
+        '<div class="m-add-row" style="margin-bottom:5px;">'+
+        '<select id="mcat-'+s.id+'-'+k+'" style="min-width:120px;">'+catOpts+'</select>'+
+        '<select id="mt-'+s.id+'-'+k+'" style="max-width:100px;">'+typeOpts+'</select></div>'+
+        '<div class="m-add-row">'+
+        '<input type="text" placeholder="세부 미션명 (예: 브릭스리딩 150)" id="mi-'+s.id+'-'+k+'">'+
         '<input type="number" placeholder="만점" id="mi-max-'+s.id+'-'+k+'" style="max-width:70px;" min="1">'+
         '<button onclick="addMiss(\''+s.id+'\',\''+k+'\')">+ 추가</button></div></div></div>';
     }).join('')+'</div>';
 }
 function addMiss(sid,day){
+  var category=(document.getElementById('mcat-'+sid+'-'+day)&&document.getElementById('mcat-'+sid+'-'+day).value)||'other';
   var type=(document.getElementById('mt-'+sid+'-'+day)&&document.getElementById('mt-'+sid+'-'+day).value)||'check';
   var txt=(document.getElementById('mi-'+sid+'-'+day)&&document.getElementById('mi-'+sid+'-'+day).value||'').trim();
-  var pl=(document.getElementById('mi-pl-'+sid+'-'+day)&&document.getElementById('mi-pl-'+sid+'-'+day).value||'').trim();
   var scoreMax=parseInt((document.getElementById('mi-max-'+sid+'-'+day)&&document.getElementById('mi-max-'+sid+'-'+day).value)||'0',10);
+  var catLabel=(MISSION_CATEGORIES.find(function(c){return c.value===category;})||{label:'Other'}).label;
   if(!txt){showToast('미션 이름을 입력해주세요');return;}
   if((type==='listening'||type==='vocabulary')&&!scoreMax){showToast('점수형은 만점을 입력해주세요');return;}
   var s=padRoster.find(function(x){return x.id===sid;}); if(!s) return;
   if(!s.missions) s.missions={};
   if(!s.missions[day]) s.missions[day]=[];
-  s.missions[day].push({text:txt,parentLabel:pl,type:type,scoreMax:type==='check'?0:scoreMax});
+  s.missions[day].push({text:txt,parentLabel:catLabel,category:category,type:type,scoreMax:type==='check'?0:scoreMax});
   saveRoster(padRoster).then(function(){showToast('미션 추가됨');drawAdmin();});
 }
 function delMiss(sid,day,idx){
@@ -800,7 +891,7 @@ function delMiss(sid,day,idx){
 // onclick에서 호출되는 모든 함수를 window에 명시적 등록
 window.setMode=setMode; window.toggleAdmin=toggleAdmin; window.doPinKey=doPinKey;
 window.onTC=onTC; window.addStu=addStu; window.delStu=delStu;
-window.togSched=togSched; window.setSched=setSched;
+window.togSched=togSched; window.setSched=setSched; window.setEndTime=setEndTime;
 window.togMiss=togMiss; window.addMiss=addMiss; window.delMiss=delMiss;
 window.kPress=kPress; window.kClear=kClear; window.kConfirm=kConfirm;
 window.toggleSM=toggleSM; window.submitScore=submitScore; window.undoSM=undoSM;
