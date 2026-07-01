@@ -195,25 +195,40 @@ const WD_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
 const WD_LABELS=[['mon','월'],['tue','화'],['wed','수'],['thu','목'],['fri','금'],['sat','토'],['sun','일']];
 const ADMIN_PIN='1234';
 
-// onclick에서 호출되는 함수들을 미리 전역에 등록 (함수 선언보다 앞서 호출될 수 있으므로)
-['setMode','onTC','addStu','delStu','togSched','setSched','togMiss','addMiss','delMiss',
- 'toggleAdmin','pinKey','skPress','skClear','skConfirm','pkPress','pkClear','pkConfirm',
- 'toggleSM','submitScore','undoSM','addBook','removeBook','selectReview',
- 'stuCheckout','closeCele','addBook_admin','delBook_admin','openEdit','closeEdit','saveEdit',
- 'goPage','setLevel'
-].forEach(fn=>{window[fn]=function(){
-  if(typeof eval(fn)==='function')return eval(fn).apply(this,arguments);
-  console.warn(fn+' not ready');
-};});
+/* ── 유틸 함수 (최상단 선언) ── */
+function uid(){return Math.random().toString(36).slice(2,9);}
+function todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function monthKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function todayWD(){return WD_KEYS[new Date().getDay()];}
+function fmtClock(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
+function fmtTs(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function fmtTimer(sec){const s=Math.max(0,Math.floor(sec));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function computeEnd(stu,start){
+  if(stu.type==='m60')return start+60*60000;
+  if(stu.type==='m90')return start+90*60000;
+  if((stu.type==='endtime'||stu.type==='mission')&&stu.endTimeVal){const[h,m]=stu.endTimeVal.split(':').map(Number);const d=new Date(start);d.setHours(h,m,0,0);return d.getTime();}
+  return start+60*60000;
+}
+function missionFromTemplate(m){
+  if(typeof m==='string')return{text:m,parentLabel:'',type:'check',scoreMax:0};
+  return{text:m.text||'',parentLabel:m.parentLabel||'',type:m.type||'check',scoreMax:parseInt(m.scoreMax||0,10)};
+}
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
 
+/* ── Firebase ── */
 async function fbGet(p){try{const r=await fetch(`${FIREBASE}/${p}.json`);return await r.json();}catch{return null;}}
 async function fbSet(p,d){try{await fetch(`${FIREBASE}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});}catch{showToast('⚠️ 저장 실패');}}
 async function loadRoster(){const d=await fbGet('roster');return Array.isArray(d)?d.filter(Boolean):[];}
 async function saveRoster(l){await fbSet('roster',l);}
 async function loadSessions(){const d=await fbGet('sessions');return d&&typeof d==='object'?d:{};}
 async function saveSessions(o){await fbSet('sessions',o);}
+async function loadBookLibrary(){const d=await fbGet('booklibrary');return d&&typeof d==='object'?d:{};}
+async function saveBookLibrary(o){await fbSet('booklibrary',o);}
+async function saveAttendance(sid,dk,data){await fbSet(`attendance/${sid}/${dk}`,data);}
 
-// 날짜가 바뀌면 이전 날 세션을 자동으로 초기화 (백그라운드 실행)
+/* ── 날짜 바뀌면 이전 세션 자동 정리 ── */
 async function cleanupOldSessions(){
   try{
     const sessions=await loadSessions();
@@ -230,6 +245,10 @@ async function cleanupOldSessions(){
   }catch(e){console.log('cleanup skipped',e);}
 }
 
+/* ── 인터벌 변수 ── */
+let tvIv,tvClkIv,padIv;
+
+/* ── 라우터 ── */
 function getMode(){return window.location.hash.replace('#','')||null;}
 function setMode(m){window.location.hash=m||'';render();}
 window.setMode=setMode;
