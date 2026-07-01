@@ -195,6 +195,17 @@ const WD_KEYS=['sun','mon','tue','wed','thu','fri','sat'];
 const WD_LABELS=[['mon','월'],['tue','화'],['wed','수'],['thu','목'],['fri','금'],['sat','토'],['sun','일']];
 const ADMIN_PIN='1234';
 
+// onclick에서 호출되는 함수들을 미리 전역에 등록 (함수 선언보다 앞서 호출될 수 있으므로)
+['setMode','onTC','addStu','delStu','togSched','setSched','togMiss','addMiss','delMiss',
+ 'toggleAdmin','pinKey','skPress','skClear','skConfirm','pkPress','pkClear','pkConfirm',
+ 'toggleSM','submitScore','undoSM','addBook','removeBook','selectReview',
+ 'stuCheckout','closeCele','addBook_admin','delBook_admin','openEdit','closeEdit','saveEdit',
+ 'goPage','setLevel'
+].forEach(fn=>{window[fn]=function(){
+  if(typeof eval(fn)==='function')return eval(fn).apply(this,arguments);
+  console.warn(fn+' not ready');
+};});
+
 async function fbGet(p){try{const r=await fetch(`${FIREBASE}/${p}.json`);return await r.json();}catch{return null;}}
 async function fbSet(p,d){try{await fetch(`${FIREBASE}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});}catch{showToast('⚠️ 저장 실패');}}
 async function loadRoster(){const d=await fbGet('roster');return Array.isArray(d)?d.filter(Boolean):[];}
