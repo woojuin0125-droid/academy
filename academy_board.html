@@ -219,6 +219,11 @@ async function cleanupOldSessions(){
   }catch(e){console.log('cleanup skipped',e);}
 }
 
+function getMode(){return window.location.hash.replace('#','')||null;}
+function setMode(m){window.location.hash=m||'';render();}
+window.setMode=setMode;
+window.addEventListener('hashchange',render);
+
 function render(){
   clearInterval(tvIv);clearInterval(tvClkIv);clearInterval(padIv);
   const m=getMode();
