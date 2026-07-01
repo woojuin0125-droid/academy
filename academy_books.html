@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학원 도서 관리</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+:root{
+  --bg:#FAF8F3;--card:#FFF;--border:#E6E1D6;--text:#232A3B;--muted:#9098A8;
+  --green:#2FAE76;--green-bg:#E4F7EE;--blue:#3B6FE0;--blue-bg:#E9EFFD;
+  --red:#C0392B;--red-bg:#FDEDED;--amber:#E8930A;--amber-bg:#FFF3DC;
+  --purple:#8B5CF6;--purple-bg:#F3EFFE;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
+
+/* PIN */
+.pin-overlay{position:fixed;inset:0;background:rgba(10,14,26,.55);display:flex;align-items:center;justify-content:center;z-index:200;}
+.pin-box{background:var(--card);border-radius:20px;padding:32px 28px;width:290px;box-shadow:0 8px 40px rgba(0,0,0,.18);}
+.pin-box h2{font-size:1.1rem;font-weight:800;margin-bottom:4px;}
+.pin-box p{font-size:.82rem;color:var(--muted);margin-bottom:18px;}
+.pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:18px;}
+.p-dot{width:13px;height:13px;border-radius:50%;background:var(--border);transition:background .2s;}
+.p-dot.filled{background:var(--green);}
+.pin-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.p-key{height:52px;border-radius:11px;background:var(--bg);border:1px solid var(--border);font-size:1.15rem;font-weight:700;cursor:pointer;}
+.p-key:active{background:var(--border);}
+.p-key.cancel{color:var(--muted);font-size:.9rem;}
+.pin-err{color:var(--red);font-size:.82rem;text-align:center;margin-top:8px;min-height:18px;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--card);flex-wrap:wrap;gap:10px;}
+.topbar h1{font-size:1.05rem;font-weight:900;}
+.topbar-btns{display:flex;gap:8px;}
+.topbar-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:.82rem;font-weight:600;}
+.topbar-btn.primary{background:var(--green);border-color:var(--green);color:#fff;}
+.topbar-btn.purple{background:var(--purple);border-color:var(--purple);color:#fff;}
+
+.main{max-width:1060px;margin:0 auto;padding:20px 16px 60px;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;text-align:center;}
+.stat-card .sv{font-size:1.5rem;font-weight:900;color:var(--green);}
+.stat-card .sl{font-size:.72rem;color:var(--muted);margin-top:2px;}
+.stat-card.level-card .sv{font-size:1.2rem;color:var(--blue);}
+
+/* LEVEL FILTER */
+.level-filter{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.lf-label{font-size:.75rem;color:var(--muted);font-weight:700;margin-right:2px;}
+.lf-btn{padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s;}
+.lf-btn:hover{border-color:var(--blue);}
+.lf-btn.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+.lf-btn.all.active{background:var(--green);border-color:var(--green);}
+
+/* ADD FORM */
+.add-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:20px;}
+.add-card h2{font-size:.82rem;font-weight:700;margin-bottom:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.add-grid{display:grid;grid-template-columns:80px 1fr 110px 100px auto;gap:8px;align-items:end;}
+.add-grid .field{display:flex;flex-direction:column;gap:3px;}
+.add-grid label{font-size:.7rem;color:var(--muted);}
+.add-grid input{padding:8px 10px;border-radius:8px;border:1px solid var(--border);font-size:.88rem;background:var(--bg);color:var(--text);width:100%;}
+.add-grid input:focus{outline:none;border-color:var(--green);}
+.add-btn{padding:9px 16px;background:var(--green);border:none;color:#fff;font-weight:700;border-radius:8px;cursor:pointer;white-space:nowrap;}
+.add-msg{font-size:.78rem;min-height:16px;margin-top:6px;}
+.add-msg.ok{color:var(--green);}
+.add-msg.err{color:var(--red);}
+
+/* SEARCH */
+.search-row{display:flex;gap:10px;margin-bottom:14px;}
+.search-row input{flex:1;padding:9px 14px;border-radius:10px;border:1px solid var(--border);font-size:.9rem;background:var(--card);}
+.search-row input:focus{outline:none;border-color:var(--green);}
+.result-info{font-size:.8rem;color:var(--muted);align-self:center;white-space:nowrap;}
+
+/* TABLE */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.tbl-head{display:grid;grid-template-columns:70px 1fr 110px 90px 110px;background:var(--bg);border-bottom:1px solid var(--border);}
+.tbl-head div{padding:8px 12px;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.tbl-body{max-height:500px;overflow-y:auto;}
+.tbl-row{display:grid;grid-template-columns:70px 1fr 110px 90px 110px;border-bottom:1px solid var(--border);transition:background .1s;}
+.tbl-row:last-child{border-bottom:none;}
+.tbl-row:hover{background:#FAFAF8;}
+.tbl-row div{padding:8px 12px;font-size:.86rem;display:flex;align-items:center;}
+.t-num{font-weight:700;color:var(--blue);font-family:'Space Grotesk',monospace;}
+.t-title{font-weight:600;}
+.t-lvl{color:var(--amber);font-size:.8rem;font-weight:700;}
+.t-wc{color:var(--muted);font-size:.8rem;font-family:'Space Grotesk',monospace;}
+.t-acts{gap:5px;}
+.edit-btn{padding:3px 8px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;cursor:pointer;font-size:.74rem;}
+.del-btn{padding:3px 8px;background:none;border:none;color:var(--red);cursor:pointer;font-size:.74rem;}
+.no-result{text-align:center;padding:36px;color:var(--muted);font-size:.9rem;}
+
+/* PAGINATION */
+.pager{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;flex-wrap:wrap;}
+.pager button{padding:5px 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-size:.8rem;}
+.pager button.active{background:var(--green);border-color:var(--green);color:#fff;font-weight:700;}
+.pager button:disabled{opacity:.4;cursor:default;}
+.pg-info{font-size:.78rem;color:var(--muted);}
+
+/* MODAL - EDIT */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,14,26,.4);display:flex;align-items:center;justify-content:center;z-index:300;}
+.modal{background:var(--card);border-radius:16px;padding:24px;width:360px;box-shadow:0 8px 40px rgba(0,0,0,.15);}
+.modal h3{font-size:1rem;font-weight:800;margin-bottom:14px;}
+.modal-row{margin-bottom:9px;}
+.modal-row label{font-size:.72rem;color:var(--muted);display:block;margin-bottom:3px;}
+.modal-row input{width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-size:.88rem;background:var(--bg);}
+.modal-btns{display:flex;gap:8px;margin-top:14px;}
+.modal-btns button{flex:1;padding:10px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.88rem;}
+.modal-btns .save{background:var(--green);border:none;color:#fff;}
+.modal-btns .cancel{background:none;border:1px solid var(--border);color:var(--muted);}
+
+/* BULK IMPORT */
+.bulk-panel{background:var(--card);border:1px solid var(--purple);border-radius:14px;padding:20px;margin-bottom:20px;}
+.bulk-panel h2{font-size:.9rem;font-weight:800;color:var(--purple);margin-bottom:6px;}
+.bulk-desc{font-size:.78rem;color:var(--muted);margin-bottom:14px;line-height:1.6;}
+.bulk-format{background:var(--purple-bg);border-radius:8px;padding:10px 14px;font-size:.78rem;margin-bottom:12px;line-height:1.8;}
+.bulk-format code{font-family:'Space Grotesk',monospace;background:rgba(139,92,246,.1);padding:1px 5px;border-radius:3px;}
+.bulk-options{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+.bulk-options label{font-size:.8rem;color:var(--muted);}
+.bulk-options input{padding:7px 10px;border-radius:7px;border:1px solid var(--border);font-size:.88rem;width:90px;background:var(--bg);}
+.bulk-options select{padding:7px 10px;border-radius:7px;border:1px solid var(--border);font-size:.82rem;background:var(--bg);}
+.bulk-textarea{width:100%;height:180px;padding:10px 12px;border-radius:9px;border:1px solid var(--border);font-size:.84rem;background:var(--bg);resize:vertical;line-height:1.6;font-family:inherit;}
+.bulk-preview{margin-top:10px;background:var(--bg);border-radius:8px;padding:10px 12px;font-size:.78rem;max-height:140px;overflow-y:auto;display:none;}
+.bulk-preview-item{display:flex;gap:8px;padding:2px 0;border-bottom:1px solid var(--border);}
+.bulk-preview-item:last-child{border-bottom:none;}
+.bp-num{font-family:'Space Grotesk',monospace;font-weight:700;color:var(--blue);min-width:36px;}
+.bp-dup{color:var(--red);}
+.bulk-btns{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.bulk-btns button{padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;font-size:.85rem;}
+.preview-btn{background:none;border:1px solid var(--purple);color:var(--purple);}
+.import-btn{background:var(--purple);border:none;color:#fff;}
+.bulk-result{font-size:.82rem;margin-top:6px;min-height:18px;}
+.bulk-result.ok{color:var(--green);}
+.bulk-result.err{color:var(--red);}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--green);color:var(--text);padding:11px 18px;border-radius:9px;font-size:.88rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:999;}
+.toast.show{opacity:1;}
+
+@media(max-width:600px){
+  .add-grid{grid-template-columns:1fr 1fr;}
+  .tbl-head{grid-template-columns:60px 1fr 80px 70px 90px;}
+  .tbl-row{grid-template-columns:60px 1fr 80px 70px 90px;}
+}
+</style>
+</head>
+<body>
+
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <h2>🔒 도서 관리</h2>
+    <p>관리자 PIN을 입력해주세요</p>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div class="pin-kp" id="pin-kp"></div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<div id="main-wrap" style="display:none;">
+  <div class="topbar">
+    <div>
+      <h1>📚 도서 관리</h1>
+    </div>
+    <div class="topbar-btns">
+      <button class="topbar-btn purple" onclick="toggleBulk()">📋 일괄 입력</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- 통계 -->
+    <div id="stats-grid" class="stats-grid"></div>
+
+    <!-- 일괄 입력 패널 -->
+    <div id="bulk-panel" class="bulk-panel" style="display:none;">
+      <h2>📋 일괄 입력 (여러 권 한꺼번에)</h2>
+      <div class="bulk-desc">책 제목을 한 줄에 하나씩 입력하세요. 레벨과 어휘 수는 선택사항입니다.<br>번호는 자동으로 매겨지며, 시작 번호를 직접 지정할 수도 있습니다.</div>
+      <div class="bulk-format">
+        형식: <code>제목</code> 또는 <code>제목 | 레벨</code> 또는 <code>제목 | 레벨 | 어휘수</code><br>
+        예시: <code>The Very Hungry Caterpillar | GRL A | 224</code><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>Charlotte's Web | GRL R</code><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>Harry Potter and the Sorcerer's Stone</code>
+      </div>
+      <div class="bulk-options">
+        <label>시작 번호</label>
+        <input type="number" id="bulk-start" placeholder="자동" min="1">
+        <label>공통 레벨 (선택)</label>
+        <input type="text" id="bulk-level" placeholder="예: GRL A">
+        <label>공통 어휘수 (선택)</label>
+        <input type="number" id="bulk-words" placeholder="예: 200" min="0">
+      </div>
+      <textarea class="bulk-textarea" id="bulk-textarea" placeholder="제목을 한 줄에 하나씩 입력하세요...&#10;The Very Hungry Caterpillar | GRL A | 224&#10;Charlotte's Web | GRL R&#10;Harry Potter and the Sorcerer's Stone | GRL V | 77325"></textarea>
+      <div class="bulk-preview" id="bulk-preview"></div>
+      <div class="bulk-btns">
+        <button class="preview-btn" onclick="previewBulk()">🔍 미리보기</button>
+        <button class="import-btn" onclick="importBulk()">✅ 일괄 등록</button>
+        <button onclick="toggleBulk()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.85rem;">닫기</button>
+      </div>
+      <div class="bulk-result" id="bulk-result"></div>
+    </div>
+
+    <!-- 단권 추가 -->
+    <div class="add-card">
+      <h2>단권 추가</h2>
+      <div class="add-grid">
+        <div class="field"><label>번호</label><input type="number" id="a-num" placeholder="자동" min="1"></div>
+        <div class="field"><label>원서 제목 *</label><input type="text" id="a-title" placeholder="The Very Hungry Caterpillar"></div>
+        <div class="field"><label>레벨</label><input type="text" id="a-level" placeholder="예: GRL A"></div>
+        <div class="field"><label>어휘 수</label><input type="number" id="a-words" placeholder="예: 224" min="0"></div>
+        <button class="add-btn" onclick="addBook()">+ 추가</button>
+      </div>
+      <div class="add-msg" id="add-msg"></div>
+    </div>
+
+    <!-- 검색 + 레벨 필터 -->
+    <div class="search-row">
+      <input type="text" id="search-inp" placeholder="번호 또는 제목으로 검색..." oninput="onFilter()">
+      <div class="result-info" id="result-info"></div>
+    </div>
+    <div class="level-filter" id="level-filter"></div>
+
+    <!-- 테이블 -->
+    <div class="tbl-wrap">
+      <div class="tbl-head">
+        <div>번호</div><div>원서 제목</div><div>레벨</div><div>어휘 수</div><div>관리</div>
+      </div>
+      <div class="tbl-body" id="tbl-body"></div>
+    </div>
+    <div class="pager" id="pager"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FIREBASE="https://hakwoncheck-default-rtdb.firebaseio.com";
+const ADMIN_PIN='1234';
+const PAGE_SIZE=50;
+
+async function fbGet(p){try{const r=await fetch(`${FIREBASE}/${p}.json`);return await r.json();}catch{return null;}}
+async function fbSet(p,d){try{await fetch(`${FIREBASE}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});return true;}catch{return false;}}
+
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* PIN */
+let pinV='';
+function initPin(){
+  document.getElementById('pin-dots').innerHTML='<div class="p-dot"></div>'.repeat(ADMIN_PIN.length);
+  document.getElementById('pin-kp').innerHTML=[1,2,3,4,5,6,7,8,9,'취소',0,'⌫'].map(k=>`<button class="p-key ${k==='취소'?'cancel':''}" onclick="pinKey('${k}')">${k}</button>`).join('');
+}
+function pinKey(k){
+  if(k==='취소'){history.back();return;}
+  if(k==='⌫'){pinV=pinV.slice(0,-1);updDots();return;}
+  if(pinV.length>=ADMIN_PIN.length)return;
+  pinV+=k;updDots();
+  if(pinV.length===ADMIN_PIN.length){
+    if(pinV===ADMIN_PIN){document.getElementById('pin-overlay').style.display='none';document.getElementById('main-wrap').style.display='block';init();}
+    else{document.getElementById('pin-err').textContent='PIN이 틀렸습니다';setTimeout(()=>{pinV='';updDots();document.getElementById('pin-err').textContent='';},1000);}
+  }
+}
+function updDots(){document.querySelectorAll('.p-dot').forEach((d,i)=>d.classList.toggle('filled',i<pinV.length));}
+window.pinKey=pinKey;
+
+/* DATA */
+let bookLib={};
+let filteredKeys=[];
+let currentPage=1;
+let searchQ='';
+let selectedLevel='ALL';
+
+async function init(){
+  bookLib=await fbGet('booklibrary')||{};
+  renderStats();renderLevelFilter();renderTable();
+}
+
+/* 다음 자동 번호 */
+function nextAutoNum(){
+  const nums=Object.keys(bookLib).map(k=>parseInt(k,10)).filter(n=>!isNaN(n));
+  return nums.length?Math.max(...nums)+1:1;
+}
+
+/* STATS */
+function renderStats(){
+  const keys=Object.keys(bookLib);
+  const totalWords=keys.reduce((s,k)=>s+(parseInt(bookLib[k].wordCount||0,10)),0);
+
+  // 레벨별 집계
+  const levelCount={};
+  keys.forEach(k=>{const lv=(bookLib[k].level||'레벨 미지정').trim();levelCount[lv]=(levelCount[lv]||0)+1;});
+  const levelEntries=Object.entries(levelCount).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  const grid=document.getElementById('stats-grid');
+  grid.innerHTML=`
+    <div class="stat-card"><div class="sv">${keys.length.toLocaleString()}</div><div class="sl">전체 권수</div></div>
+    <div class="stat-card"><div class="sv" style="font-size:1.1rem;">${totalWords.toLocaleString()}</div><div class="sl">총 어휘 수</div></div>
+    ${levelEntries.map(([lv,cnt])=>`<div class="stat-card level-card"><div class="sv">${cnt}</div><div class="sl">${esc(lv)}</div></div>`).join('')}
+  `;
+}
+
+/* LEVEL FILTER */
+function renderLevelFilter(){
+  const keys=Object.keys(bookLib);
+  const levels=[...new Set(keys.map(k=>(bookLib[k].level||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const filter=document.getElementById('level-filter');
+  filter.innerHTML=`<span class="lf-label">레벨:</span>
+    <button class="lf-btn all ${selectedLevel==='ALL'?'active':''}" onclick="setLevel('ALL')">전체</button>
+    <button class="lf-btn ${selectedLevel==='NONE'?'active':''}" onclick="setLevel('NONE')">미지정</button>
+    ${levels.map(lv=>`<button class="lf-btn ${selectedLevel===lv?'active':''}" onclick="setLevel('${esc(lv)}')">${esc(lv)}</button>`).join('')}`;
+}
+function setLevel(lv){selectedLevel=lv;currentPage=1;renderLevelFilter();renderTable();}
+window.setLevel=setLevel;
+
+/* FILTER + TABLE */
+function onFilter(){searchQ=document.getElementById('search-inp').value.toLowerCase().trim();currentPage=1;renderTable();}
+window.onFilter=onFilter;
+
+function renderTable(){
+  filteredKeys=Object.keys(bookLib).filter(k=>{
+    const b=bookLib[k];
+    const lv=(b.level||'').trim();
+    if(selectedLevel==='NONE'&&lv)return false;
+    if(selectedLevel!=='ALL'&&selectedLevel!=='NONE'&&lv!==selectedLevel)return false;
+    if(!searchQ)return true;
+    return k.includes(searchQ)||(b.title||'').toLowerCase().includes(searchQ)||(b.level||'').toLowerCase().includes(searchQ);
+  }).sort((a,b)=>parseInt(a,10)-parseInt(b,10));
+
+  const total=filteredKeys.length;
+  const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  if(currentPage>totalPages)currentPage=1;
+  const start=(currentPage-1)*PAGE_SIZE;
+  const pageKeys=filteredKeys.slice(start,start+PAGE_SIZE);
+
+  document.getElementById('result-info').textContent=`${total.toLocaleString()}권`;
+
+  const body=document.getElementById('tbl-body');
+  if(!pageKeys.length){
+    body.innerHTML=`<div class="no-result">${searchQ?`"${esc(searchQ)}" 검색 결과 없음`:'이 레벨에 등록된 도서가 없습니다'}</div>`;
+    renderPager(total,totalPages);return;
+  }
+  body.innerHTML=pageKeys.map(k=>{
+    const b=bookLib[k];
+    return`<div class="tbl-row">
+      <div class="t-num">${esc(k)}</div>
+      <div class="t-title">${esc(b.title||'')}</div>
+      <div class="t-lvl">${esc(b.level||'-')}</div>
+      <div class="t-wc">${b.wordCount?(parseInt(b.wordCount).toLocaleString()):'-'}</div>
+      <div class="t-acts">
+        <button class="edit-btn" onclick="openEdit('${esc(k)}')">수정</button>
+        <button class="del-btn" onclick="delBook('${esc(k)}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+  renderPager(total,totalPages);
+}
+
+function renderPager(total,totalPages){
+  const pager=document.getElementById('pager');
+  if(totalPages<=1){pager.innerHTML='';return;}
+  const range=7;const start=Math.max(1,currentPage-Math.floor(range/2));const end=Math.min(totalPages,start+range-1);
+  let html=`<span class="pg-info">${total.toLocaleString()}권 · ${currentPage}/${totalPages}p</span>`;
+  html+=`<button ${currentPage===1?'disabled':''} onclick="goPage(1)">«</button>`;
+  html+=`<button ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">‹</button>`;
+  for(let i=start;i<=end;i++)html+=`<button class="${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  html+=`<button ${currentPage===totalPages?'disabled':''} onclick="goPage(${currentPage+1})">›</button>`;
+  html+=`<button ${currentPage===totalPages?'disabled':''} onclick="goPage(${totalPages})">»</button>`;
+  pager.innerHTML=html;
+}
+window.goPage=function(p){currentPage=p;renderTable();window.scrollTo(0,0);};
+
+/* ADD SINGLE */
+async function addBook(){
+  const numRaw=(document.getElementById('a-num').value||'').trim();
+  const num=numRaw||String(nextAutoNum());
+  const title=(document.getElementById('a-title').value||'').trim();
+  const level=(document.getElementById('a-level').value||'').trim();
+  const words=(document.getElementById('a-words').value||'').trim();
+  const msg=document.getElementById('add-msg');
+  if(!title){msg.textContent='제목은 필수입니다';msg.className='add-msg err';return;}
+  if(bookLib[num]){msg.textContent=`No.${num}은 이미 등록된 번호입니다`;msg.className='add-msg err';return;}
+  bookLib[num]={title,level,wordCount:words?parseInt(words,10):0};
+  await fbSet('booklibrary',bookLib);
+  document.getElementById('a-num').value='';
+  document.getElementById('a-title').value='';
+  document.getElementById('a-level').value='';
+  document.getElementById('a-words').value='';
+  msg.textContent=`No.${num} "${title}" 등록 완료!`;msg.className='add-msg ok';
+  setTimeout(()=>msg.textContent='',2500);
+  renderStats();renderLevelFilter();renderTable();
+}
+window.addBook=addBook;
+
+/* DELETE */
+async function delBook(num){
+  if(!confirm(`No.${num} "${bookLib[num]?.title||''}"을 삭제할까요?`))return;
+  delete bookLib[num];
+  await fbSet('booklibrary',bookLib);
+  showToast('삭제되었습니다');renderStats();renderLevelFilter();renderTable();
+}
+window.delBook=delBook;
+
+/* EDIT MODAL */
+function openEdit(num){
+  const b=bookLib[num];if(!b)return;
+  const old=document.getElementById('edit-modal');if(old)old.remove();
+  const div=document.createElement('div');div.className='modal-overlay';div.id='edit-modal';
+  div.innerHTML=`<div class="modal">
+    <h3>📝 수정 · No.${esc(num)}</h3>
+    <div class="modal-row"><label>원서 제목</label><input id="e-title" value="${esc(b.title||'')}"></div>
+    <div class="modal-row"><label>레벨</label><input id="e-level" value="${esc(b.level||'')}"></div>
+    <div class="modal-row"><label>어휘 수</label><input type="number" id="e-words" value="${b.wordCount||0}" min="0"></div>
+    <div class="modal-btns">
+      <button class="cancel" onclick="closeEdit()">취소</button>
+      <button class="save" onclick="saveEdit('${esc(num)}')">저장</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+  document.getElementById('e-title').focus();
+}
+function closeEdit(){document.getElementById('edit-modal')?.remove();}
+async function saveEdit(num){
+  const title=(document.getElementById('e-title')?.value||'').trim();
+  const level=(document.getElementById('e-level')?.value||'').trim();
+  const words=parseInt(document.getElementById('e-words')?.value||'0',10);
+  if(!title){showToast('제목을 입력해주세요');return;}
+  bookLib[num]={title,level,wordCount:words||0};
+  await fbSet('booklibrary',bookLib);
+  closeEdit();showToast('수정되었습니다');renderStats();renderLevelFilter();renderTable();
+}
+window.openEdit=openEdit;window.closeEdit=closeEdit;window.saveEdit=saveEdit;
+
+/* BULK IMPORT */
+let bulkOpen=false;
+function toggleBulk(){
+  bulkOpen=!bulkOpen;
+  document.getElementById('bulk-panel').style.display=bulkOpen?'block':'none';
+  if(bulkOpen){
+    document.getElementById('bulk-start').placeholder=`자동 (${nextAutoNum()}번부터)`;
+    document.getElementById('bulk-result').textContent='';
+    document.getElementById('bulk-preview').style.display='none';
+  }
+}
+window.toggleBulk=toggleBulk;
+
+function parseBulkLines(){
+  const raw=document.getElementById('bulk-textarea').value;
+  const commonLevel=(document.getElementById('bulk-level').value||'').trim();
+  const commonWords=parseInt(document.getElementById('bulk-words').value||'0',10)||0;
+  const startRaw=parseInt(document.getElementById('bulk-start').value||'0',10);
+  let nextNum=startRaw>0?startRaw:nextAutoNum();
+
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+  return lines.map(line=>{
+    const parts=line.split('|').map(p=>p.trim());
+    const title=parts[0]||'';
+    const level=parts[1]||commonLevel||'';
+    const wordCount=parseInt(parts[2]||'0',10)||commonWords||0;
+    const num=String(nextNum++);
+    const duplicate=!!bookLib[num];
+    return{num,title,level,wordCount,duplicate};
+  }).filter(r=>r.title);
+}
+
+function previewBulk(){
+  const rows=parseBulkLines();
+  const preview=document.getElementById('bulk-preview');
+  if(!rows.length){preview.style.display='none';document.getElementById('bulk-result').textContent='내용을 입력해주세요';document.getElementById('bulk-result').className='bulk-result err';return;}
+  const dups=rows.filter(r=>r.duplicate);
+  preview.innerHTML=rows.map(r=>`<div class="bulk-preview-item ${r.duplicate?'bp-dup':''}">
+    <span class="bp-num">${r.num}</span>
+    <span>${esc(r.title)}${r.level?` <span style="color:var(--amber);font-size:.74rem">${esc(r.level)}</span>`:''}${r.wordCount?` <span style="color:var(--muted);font-size:.74rem">${r.wordCount.toLocaleString()}어휘</span>`:''}${r.duplicate?' ⚠️ 번호 중복':''}</span>
+  </div>`).join('');
+  preview.style.display='block';
+  document.getElementById('bulk-result').textContent=`총 ${rows.length}권 · ${dups.length?`⚠️ ${dups.length}개 번호 중복 (건너뜀)`:'중복 없음'}`;
+  document.getElementById('bulk-result').className=`bulk-result ${dups.length?'err':'ok'}`;
+}
+window.previewBulk=previewBulk;
+
+async function importBulk(){
+  const rows=parseBulkLines();
+  if(!rows.length){document.getElementById('bulk-result').textContent='입력된 내용이 없습니다';document.getElementById('bulk-result').className='bulk-result err';return;}
+  const toAdd=rows.filter(r=>!r.duplicate);
+  if(!toAdd.length){document.getElementById('bulk-result').textContent='추가할 수 있는 책이 없습니다 (모두 번호 중복)';document.getElementById('bulk-result').className='bulk-result err';return;}
+  if(!confirm(`${toAdd.length}권을 등록할까요?${rows.length>toAdd.length?` (${rows.length-toAdd.length}권은 번호 중복으로 건너뜀)`:''}`))return;
+  toAdd.forEach(r=>{bookLib[r.num]={title:r.title,level:r.level,wordCount:r.wordCount};});
+  const ok=await fbSet('booklibrary',bookLib);
+  if(ok){
+    document.getElementById('bulk-textarea').value='';
+    document.getElementById('bulk-preview').style.display='none';
+    document.getElementById('bulk-result').textContent=`✅ ${toAdd.length}권 등록 완료!`;
+    document.getElementById('bulk-result').className='bulk-result ok';
+    renderStats();renderLevelFilter();renderTable();
+  }else{
+    document.getElementById('bulk-result').textContent='저장 중 오류가 발생했습니다';
+    document.getElementById('bulk-result').className='bulk-result err';
+  }
+}
+window.importBulk=importBulk;
+
+// Enter key
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(e.target.closest('.add-card'))addBook();
+    if(e.target.id==='e-title'||e.target.id==='e-level'||e.target.id==='e-words'){const n=e.target.closest('.modal')?.querySelector('button.save');if(n)n.click();}
+  }
+});
+
+initPin();
+</script>
+</body>
+</html>
