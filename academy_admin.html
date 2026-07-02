@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학생 관리 · Hello English Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F8FF;
+    --card:#FFFFFF;
+    --ink:#1F2937;
+    --sub:#6B7686;
+    --line:#E7ECF6;
+    --primary:#2FAE76;      /* 브랜드 그린 */
+    --primary-ink:#0F6B45;
+    --primary-soft:#E4F7EE;
+    --gold:#F5A623;         /* 브랜드 골드 */
+    --gold-soft:#FFF3DD;
+    --violet:#6C63FF;       /* 숙제 전용 강조색 */
+    --violet-soft:#EEEDFF;
+    --danger:#EF5A5A;
+    --danger-soft:#FDECEC;
+    --radius:18px;
+    --shadow:0 8px 24px rgba(31,41,55,.06), 0 2px 6px rgba(31,41,55,.04);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Noto Sans KR',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num, .mono{font-family:'Space Grotesk',sans-serif;}
+
+  /* ---------- PIN 게이트 ---------- */
+  #pinGate{
+    position:fixed; inset:0; z-index:999;
+    background:linear-gradient(160deg,#2FAE76 0%,#1F8F5D 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pinCard{
+    background:var(--card); border-radius:24px; padding:40px 36px;
+    width:320px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.25);
+  }
+  .pinCard .badge{
+    width:56px;height:56px;border-radius:16px;background:var(--primary-soft);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;
+  }
+  .pinCard h1{font-size:18px;margin:0 0 4px;}
+  .pinCard p{font-size:13px;color:var(--sub);margin:0 0 20px;}
+  #pinDots{display:flex;gap:10px;justify-content:center;margin-bottom:18px;}
+  .pinDot{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);}
+  .pinDot.filled{background:var(--primary);border-color:var(--primary);}
+  #pinInput{position:absolute; opacity:0; pointer-events:none;}
+  .pinErr{color:var(--danger);font-size:12px;height:16px;margin-bottom:4px;}
+
+  /* ---------- 레이아웃 ---------- */
+  #app{display:none;}
+  header.top{
+    background:var(--card); border-bottom:1px solid var(--line);
+    padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:20;
+  }
+  header.top .brand{display:flex;align-items:center;gap:10px;}
+  header.top .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--primary);}
+  header.top h2{font-size:16px;margin:0;font-weight:700;}
+  header.top .sub{font-size:12px;color:var(--sub);}
+  .btn{
+    border:none; border-radius:12px; padding:10px 16px; font-weight:700; font-size:13px;
+    cursor:pointer; font-family:inherit; transition:.15s transform;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--primary); color:#fff;}
+  .btn-soft{background:var(--primary-soft); color:var(--primary-ink);}
+  .btn-ghost{background:transparent; color:var(--sub); border:1px solid var(--line);}
+  .btn-danger{background:var(--danger-soft); color:var(--danger);}
+
+  main{display:grid; grid-template-columns:320px 1fr; gap:20px; padding:20px 28px; max-width:1200px; margin:0 auto;}
+  @media (max-width:860px){ main{grid-template-columns:1fr;} }
+
+  .panel{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px;}
+  .panel h3{margin:0 0 12px; font-size:14px; color:var(--sub); font-weight:700; letter-spacing:.02em;}
+
+  #search{
+    width:100%; padding:10px 14px; border-radius:12px; border:1px solid var(--line);
+    background:var(--bg); font-family:inherit; font-size:13px; margin-bottom:12px;
+  }
+  #studentList{display:flex; flex-direction:column; gap:8px; max-height:70vh; overflow:auto;}
+  .stuRow{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px;
+    cursor:pointer; border:1px solid transparent;
+  }
+  .stuRow:hover{background:var(--bg);}
+  .stuRow.active{background:var(--primary-soft); border-color:var(--primary);}
+  .stuAvatar{
+    width:36px;height:36px;border-radius:10px;background:var(--gold-soft);color:#a5720c;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;
+  }
+  .stuMeta{flex:1; min-width:0;}
+  .stuMeta .nm{font-weight:700; font-size:13px;}
+  .stuMeta .no{font-size:11px; color:var(--sub);}
+  .typeTag{font-size:10px; padding:3px 8px; border-radius:20px; font-weight:700;}
+  .typeTag.endtime{background:var(--gold-soft); color:#a5720c;}
+  .typeTag.mission{background:var(--primary-soft); color:var(--primary-ink);}
+
+  .editor{display:flex; flex-direction:column; gap:16px;}
+  .field label{font-size:12px; color:var(--sub); font-weight:700; display:block; margin-bottom:6px;}
+  .field input[type=text]{
+    width:100%; padding:11px 14px; border-radius:12px; border:1px solid var(--line);
+    font-family:inherit; font-size:14px; background:var(--bg);
+  }
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+  /* 요일 칩 (스케줄/미션 공용 시그니처 요소) */
+  .wdStrip{display:flex; gap:8px; margin-bottom:14px;}
+  .wdChip{
+    flex:1; text-align:center; padding:10px 0; border-radius:12px; background:var(--bg);
+    border:2px solid transparent; cursor:pointer; font-weight:700; font-size:13px; color:var(--sub);
+    position:relative;
+  }
+  .wdChip .cnt{
+    position:absolute; top:-6px; right:-6px; background:var(--violet); color:#fff;
+    font-size:9px; width:16px; height:16px; border-radius:50%; display:none;
+    align-items:center; justify-content:center; font-family:'Space Grotesk';
+  }
+  .wdChip.hasMission .cnt{display:flex;}
+  .wdChip.active{background:var(--primary); color:#fff;}
+  .wdChip.off{opacity:.35;}
+
+  .timeRow{display:flex; align-items:center; gap:8px;}
+  .timeRow select{
+    padding:9px 10px; border-radius:10px; border:1px solid var(--line); background:#fff;
+    font-family:'Space Grotesk'; font-weight:600; font-size:13px;
+  }
+  .pmTag{
+    background:var(--violet-soft); color:var(--violet); font-size:11px; font-weight:700;
+    padding:4px 10px; border-radius:8px;
+  }
+  .toggleWrap{display:flex; gap:8px; background:var(--bg); padding:4px; border-radius:12px;}
+  .toggleWrap button{
+    flex:1; border:none; background:transparent; padding:9px 0; border-radius:9px;
+    font-family:inherit; font-weight:700; font-size:12.5px; cursor:pointer; color:var(--sub);
+  }
+  .toggleWrap button.on{background:#fff; color:var(--primary-ink); box-shadow:0 2px 6px rgba(0,0,0,.06);}
+
+  /* 미션 카드 */
+  .missionCard{
+    border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:10px; background:var(--bg);
+  }
+  .missionCard.cat-homework{background:var(--violet-soft); border-color:#d9d5ff;}
+  .missionTop{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+  .catSelect, .typeSelect{
+    padding:8px 10px; border-radius:9px; border:1px solid var(--line); background:#fff;
+    font-family:inherit; font-size:12.5px; font-weight:700;
+  }
+  .missionCard input[type=text]{
+    width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--line);
+    font-family:inherit; font-size:13px; margin-bottom:8px; background:#fff;
+  }
+  .scoreRow{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub);}
+  .scoreRow input{width:70px; padding:7px 9px; border-radius:8px; border:1px solid var(--line); font-family:'Space Grotesk';}
+  .rmBtn{margin-left:auto; background:none; border:none; color:var(--danger); cursor:pointer; font-size:12px; font-weight:700;}
+  .addMissionBtn{
+    width:100%; padding:10px; border-radius:12px; border:1.5px dashed #cfd6e4; background:transparent;
+    color:var(--sub); font-weight:700; font-size:12.5px; cursor:pointer;
+  }
+  .homeworkNote{font-size:11px; color:var(--violet); margin-top:4px; line-height:1.5;}
+
+  .emptyState{display:flex; flex-direction:column; align-items:center; justify-content:center; height:60vh; color:var(--sub); gap:8px;}
+  .emptyState .big{font-size:40px;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:12px 22px; border-radius:12px; font-size:13px;
+    font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,.2); opacity:0; pointer-events:none; transition:.25s;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+  .catLegend{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;}
+  .legendChip{font-size:10.5px; padding:4px 9px; border-radius:20px; background:var(--bg); color:var(--sub); font-weight:700;}
+</style>
+</head>
+<body>
+
+<!-- ============ PIN 게이트 ============ -->
+<div id="pinGate">
+  <div class="pinCard">
+    <div class="badge">🔒</div>
+    <h1>관리자 인증</h1>
+    <p>PIN 4자리를 입력하세요</p>
+    <div id="pinDots">
+      <div class="pinDot"></div><div class="pinDot"></div><div class="pinDot"></div><div class="pinDot"></div>
+    </div>
+    <div class="pinErr" id="pinErr"></div>
+    <input type="tel" id="pinInput" maxlength="4" autofocus>
+    <button class="btn btn-primary" style="width:100%" onclick="document.getElementById('pinInput').focus()">입력하기</button>
+  </div>
+</div>
+
+<!-- ============ 메인 앱 ============ -->
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <h2 id="academyNameTop">학생 관리</h2>
+        <div class="sub">기본정보 · 스케줄 · 미션 템플릿</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="newStudent()">+ 학생 등록</button>
+  </header>
+
+  <main>
+    <!-- 좌측: 학생 목록 -->
+    <section class="panel">
+      <h3>학생 목록</h3>
+      <input id="search" type="text" placeholder="이름 또는 학번 검색">
+      <div id="studentList"></div>
+    </section>
+
+    <!-- 우측: 편집기 -->
+    <section class="panel" id="editorPanel">
+      <div class="emptyState" id="emptyState">
+        <div class="big">🧒</div>
+        <div>왼쪽에서 학생을 선택하거나<br>새 학생을 등록하세요</div>
+      </div>
+      <div class="editor" id="editorForm" style="display:none;"></div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Firebase Realtime Database — REST API 방식 (SDK 미사용)
+   설계 문서 §2 공통 규약 그대로 준수
+   ============================================================ */
+var FIREBASE = 'https://hakwoncheck-default-rtdb.firebaseio.com';
+var ADMIN_PIN = '1234'; // 설계 문서 §1 공통 관리자 PIN
+
+function fbGet(path) {
+  return fetch(FIREBASE + '/' + path + '.json')
+    .then(function(r){ return r.json(); })
+    .catch(function(){ return null; });
+}
+function fbSet(path, data) {
+  return fetch(FIREBASE + '/' + path + '.json', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  });
+}
+
+/* ---------- 상수: 상위 카테고리 6개 + 숙제(별도) ---------- */
+var WD_KEYS = ['mon','tue','wed','thu','fri']; // 토/일 제외 (학원 수업일)
+var WD_LABELS = {mon:'월', tue:'화', wed:'수', thu:'목', fri:'금'};
+
+var CATEGORIES = [
+  {key:'reading',   label:'Reading',              color:'#2FAE76'},
+  {key:'listening', label:'Listening & Speaking',  color:'#4E8CF0'},
+  {key:'writing',   label:'Writing',               color:'#F5A623'},
+  {key:'grammar',   label:'Grammar',               color:'#9B6BF2'},
+  {key:'phonics',   label:'Phonics',               color:'#F76E9C'},
+  {key:'words',     label:'Words',                 color:'#2BB6B6'},
+  {key:'homework',  label:'숙제(Homework)',        color:'#6C63FF'}
+];
+function catInfo(key){
+  for (var i=0;i<CATEGORIES.length;i++) if (CATEGORIES[i].key===key) return CATEGORIES[i];
+  return CATEGORIES[0];
+}
+/* 숙제 5단계 상태값 — 학생 패드에서 매일 직접 선택.
+   완료/없음/학원에서완료 → 성취율 계산 시 '완료'로 처리
+   미완료/미지참            → '미완료'로 처리
+   (이 값 자체는 세션/출결 기록에서 사용되며, 여기 템플릿에는 저장하지 않음) */
+var HOMEWORK_STATUSES = [
+  {key:'done',          label:'완료',        success:true},
+  {key:'none',          label:'없음',        success:true},
+  {key:'doneAtAcademy', label:'학원에서완료', success:true},
+  {key:'incomplete',    label:'미완료',      success:false},
+  {key:'notBrought',    label:'미지참',      success:false}
+];
+
+/* ---------- 상태 ---------- */
+var roster = [];
+var currentId = null;
+
+/* ============================================================
+   PIN 게이트
+   ============================================================ */
+var pinInput = document.getElementById('pinInput');
+var pinValue = '';
+function renderPinDots(){
+  var dots = document.querySelectorAll('.pinDot');
+  for (var i=0;i<dots.length;i++){
+    dots[i].classList.toggle('filled', i < pinValue.length);
+  }
+}
+pinInput.addEventListener('input', function(e){
+  pinValue = (e.target.value || '').replace(/\D/g,'').slice(0,4);
+  e.target.value = pinValue;
+  renderPinDots();
+  document.getElementById('pinErr').textContent = '';
+  if (pinValue.length === 4){
+    if (pinValue === ADMIN_PIN){
+      document.getElementById('pinGate').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      boot();
+    } else {
+      document.getElementById('pinErr').textContent = 'PIN이 올바르지 않습니다';
+      pinValue = ''; pinInput.value = '';
+      renderPinDots();
+    }
+  }
+});
+setTimeout(function(){ pinInput.focus(); }, 200);
+
+/* ============================================================
+   초기 로드
+   ============================================================ */
+function boot(){
+  fbGet('settings').then(function(s){
+    if (s && s.academyName) document.getElementById('academyNameTop').textContent = s.academyName;
+  });
+  loadRoster();
+  document.getElementById('search').addEventListener('input', renderList);
+}
+
+function loadRoster(){
+  fbGet('roster').then(function(data){
+    roster = Array.isArray(data) ? data.filter(Boolean) : [];
+    renderList();
+  });
+}
+
+function saveRoster(){
+  return fbSet('roster', roster);
+}
+
+/* ============================================================
+   좌측 학생 목록
+   ============================================================ */
+function renderList(){
+  var q = document.getElementById('search').value.trim().toLowerCase();
+  var wrap = document.getElementById('studentList');
+  wrap.innerHTML = '';
+  var filtered = roster.filter(function(s){
+    if (!q) return true;
+    return (s.name||'').toLowerCase().indexOf(q) >= 0 || (s.number||'').indexOf(q) >= 0;
+  });
+  if (!filtered.length){
+    wrap.innerHTML = '<div style="text-align:center; color:var(--sub); font-size:12px; padding:20px 0;">등록된 학생이 없습니다</div>';
+    return;
+  }
+  filtered.forEach(function(s){
+    var row = document.createElement('div');
+    row.className = 'stuRow' + (s.id === currentId ? ' active' : '');
+    row.onclick = function(){ openStudent(s.id); };
+    row.innerHTML =
+      '<div class="stuAvatar">' + (s.name ? s.name.charAt(0) : '?') + '</div>' +
+      '<div class="stuMeta"><div class="nm">' + escapeHtml(s.name||'(이름없음)') + '</div>' +
+      '<div class="no mono">' + (s.number||'') + '</div></div>' +
+      '<div class="typeTag ' + (s.type==='endtime' ? 'endtime' : 'mission') + '">' +
+      (s.type==='endtime' ? '지정시간' : '자유하원') + '</div>';
+    wrap.appendChild(row);
+  });
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ============================================================
+   학번 자동 부여
+   형식: YYMM + 2자리 순번  (예: 2026-07 첫 등록생 → "260701")
+   ※ 설계 문서 예시("240101")와 동일한 자릿수 규칙을 따름 — 팀 협의 시 조정 가능
+   ============================================================ */
+function generateStudentNumber(){
+  var d = new Date();
+  var prefix = String(d.getFullYear()).slice(2) + pad2(d.getMonth()+1);
+  var seq = 1;
+  roster.forEach(function(s){
+    if (s.number && s.number.indexOf(prefix) === 0){
+      var n = parseInt(s.number.slice(4), 10);
+      if (!isNaN(n) && n >= seq) seq = n + 1;
+    }
+  });
+  return prefix + pad2(seq);
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+function uid(){ return 'stu_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ============================================================
+   시간 입력 헬퍼 — 오전/오후 선택 없이 "오후 고정"
+   화면에는 1~12시 / 00~55분(5분 단위)만 노출하고,
+   저장 시 24시간제("HH:MM")로 변환한다.
+   ============================================================ */
+function pmTo24(hour12, min){
+  hour12 = parseInt(hour12,10); min = parseInt(min,10);
+  var h24 = (hour12 === 12) ? 12 : hour12 + 12; // 12시는 오후 12시(정오~) 그대로, 1~11시는 +12
+  return pad2(h24) + ':' + pad2(min);
+}
+function to12(hhmm){
+  if (!hhmm) return {h:'3', m:'00'};
+  var parts = hhmm.split(':');
+  var h24 = parseInt(parts[0],10), m = parts[1] || '00';
+  var h12 = (h24 === 12) ? 12 : h24 - 12;
+  if (h12 <= 0) h12 = 12;
+  return {h:String(h12), m:m};
+}
+function hourOptions(sel){
+  var out = '';
+  for (var h=1; h<=12; h++) out += '<option value="'+h+'"'+(String(h)===sel?' selected':'')+'>'+h+'시</option>';
+  return out;
+}
+function minOptions(sel){
+  var out = '';
+  for (var m=0; m<60; m+=5){
+    var mm = pad2(m);
+    out += '<option value="'+mm+'"'+(mm===sel?' selected':'')+'>'+mm+'분</option>';
+  }
+  return out;
+}
+function timeRowHtml(idPrefix, hhmm){
+  var t = to12(hhmm);
+  return '<div class="timeRow">' +
+    '<select id="'+idPrefix+'_h">'+hourOptions(t.h)+'</select>' +
+    '<select id="'+idPrefix+'_m">'+minOptions(t.m)+'</select>' +
+    '<span class="pmTag">오후</span></div>';
+}
+function readTimeRow(idPrefix){
+  var h = document.getElementById(idPrefix+'_h').value;
+  var m = document.getElementById(idPrefix+'_m').value;
+  return pmTo24(h,m);
+}
+
+/* ============================================================
+   학생 편집기
+   ============================================================ */
+var editState = null; // 편집 중인 학생 draft 객체
+var activeWD = 'mon';
+
+function newStudent(){
+  editState = {
+    id: uid(),
+    number: generateStudentNumber(),
+    name: '',
+    type: 'mission', // 기본값: 자유 하원
+    durationMin: 60, // 자유하원 전용: 체크인 + 60/90분
+    endTimeVal: '',
+    endTimeByDay: {mon:'',tue:'',wed:'',thu:'',fri:'',sat:'',sun:''},
+    schedule: {mon:'',tue:'',wed:'',thu:'',fri:'',sat:'',sun:''},
+    missions: {mon:[],tue:[],wed:[],thu:[],fri:[],sat:[],sun:[]}
+  };
+  currentId = editState.id;
+  activeWD = 'mon';
+  renderEditor(true);
+}
+function openStudent(id){
+  var s = roster.filter(function(r){ return r.id===id; })[0];
+  if (!s) return;
+  editState = JSON.parse(JSON.stringify(s));
+  if (!editState.durationMin) editState.durationMin = 60; // 하위호환: 옛 데이터 기본값
+  currentId = id;
+  activeWD = 'mon';
+  renderList();
+  renderEditor(false);
+}
+
+function renderEditor(isNew){
+  document.getElementById('emptyState').style.display = 'none';
+  var form = document.getElementById('editorForm');
+  form.style.display = 'flex';
+
+  var html = '';
+
+  // ---- 기본정보 ----
+  html += '<div class="field"><label>이름</label><input type="text" id="f_name" value="'+escapeHtml(editState.name||'')+'" placeholder="학생 이름"></div>';
+  html += '<div class="row2">';
+  html += '<div class="field"><label>학번 (자동부여)</label><input type="text" id="f_number" class="mono" value="'+editState.number+'" readonly style="background:#F0F2F7;color:var(--sub);"></div>';
+  html += '<div class="field"><label>하원 방식</label>' +
+    '<div class="toggleWrap">' +
+      '<button type="button" id="typeBtn_endtime" onclick="setCheckoutType(\'endtime\')">지정시간 하원</button>' +
+      '<button type="button" id="typeBtn_mission" onclick="setCheckoutType(\'mission\')">자유 하원</button>' +
+    '</div></div>';
+  html += '</div>';
+  html += '<div class="homeworkNote" id="checkoutNote"></div>';
+  html += '<div class="field" id="durationField" style="display:none;"><label>자유하원 기준 시간</label>' +
+    '<div class="toggleWrap">' +
+      '<button type="button" id="durBtn_60" onclick="setDuration(60)">체크인 + 60분</button>' +
+      '<button type="button" id="durBtn_90" onclick="setDuration(90)">체크인 + 90분</button>' +
+    '</div></div>';
+
+  // ---- 요일 칩 (등원/하원 시간 + 미션 템플릿 공용) ----
+  html += '<div class="field"><label>요일별 등원 시간 · 미션 구성</label>';
+  html += '<div class="wdStrip" id="wdStrip"></div>';
+  html += '<div id="dayBody"></div>';
+  html += '</div>';
+
+  // ---- 저장/삭제 ----
+  html += '<div class="row2" style="margin-top:6px;">' +
+    '<button class="btn btn-primary" onclick="commitStudent()">저장하기</button>' +
+    (isNew ? '<button class="btn btn-ghost" onclick="cancelEdit()">취소</button>'
+           : '<button class="btn btn-danger" onclick="deleteStudent()">학생 삭제</button>') +
+    '</div>';
+
+  form.innerHTML = html;
+  updateCheckoutTypeUI();
+  renderWdStrip();
+  renderDayBody();
+}
+
+function cancelEdit(){
+  currentId = null; editState = null;
+  document.getElementById('editorForm').style.display='none';
+  document.getElementById('emptyState').style.display='flex';
+  renderList();
+}
+
+function setCheckoutType(t){
+  syncDayInputs();
+  editState.type = t;
+  updateCheckoutTypeUI();
+  renderDayBody();
+}
+function setDuration(min){
+  editState.durationMin = min;
+  updateCheckoutTypeUI();
+}
+function updateCheckoutTypeUI(){
+  var eb = document.getElementById('typeBtn_endtime');
+  var mb = document.getElementById('typeBtn_mission');
+  if (!eb) return;
+  eb.classList.toggle('on', editState.type==='endtime');
+  mb.classList.toggle('on', editState.type!=='endtime');
+  document.getElementById('checkoutNote').textContent =
+    editState.type==='endtime'
+      ? '지정한 요일별 시간에 도달하면 모니터 카드 색이 5분 전부터 경고색으로 바뀝니다.'
+      : '체크인 시점 + 아래 지정 시간(60/90분)이 지나고, 동시에 그날 미션을 모두 완료해야 하원 가능 상태로 표시됩니다. 시간만 지나거나 미션만 끝난 경우는 하원 불가입니다.';
+
+  var durField = document.getElementById('durationField');
+  durField.style.display = editState.type==='mission' ? 'block' : 'none';
+  var d60 = document.getElementById('durBtn_60');
+  var d90 = document.getElementById('durBtn_90');
+  if (d60 && d90){
+    d60.classList.toggle('on', editState.durationMin!==90);
+    d90.classList.toggle('on', editState.durationMin===90);
+  }
+}
+
+/* ---------- 요일 칩 ---------- */
+function renderWdStrip(){
+  var wrap = document.getElementById('wdStrip');
+  wrap.innerHTML = '';
+  WD_KEYS.forEach(function(wd){
+    var chip = document.createElement('div');
+    var mCount = (editState.missions[wd]||[]).length;
+    chip.className = 'wdChip' + (wd===activeWD?' active':'') + (mCount>0?' hasMission':'');
+    chip.innerHTML = WD_LABELS[wd] + '<span class="cnt">'+mCount+'</span>';
+    chip.onclick = function(){ syncDayInputs(); activeWD = wd; renderWdStrip(); renderDayBody(); };
+    wrap.appendChild(chip);
+  });
+}
+
+/* 입력창에 남아있는 값(시간)을 editState로 반영 후 요일 전환 */
+function syncDayInputs(){
+  var tEl = document.getElementById('sch_h');
+  if (tEl){
+    editState.schedule[activeWD] = readTimeRow('sch');
+  }
+  var eEl = document.getElementById('end_h');
+  if (eEl && editState.type === 'endtime'){
+    editState.endTimeByDay[activeWD] = readTimeRow('end');
+  }
+}
+
+/* ---------- 요일별 상세 (등원시간 + 하원시간 + 미션 리스트) ---------- */
+function renderDayBody(){
+  var wrap = document.getElementById('dayBody');
+  var wd = activeWD;
+  var html = '';
+
+  html += '<div class="row2" style="margin-bottom:14px;">';
+  html += '<div class="field"><label>등원 시간 (' + WD_LABELS[wd] + '요일)</label>' + timeRowHtml('sch', editState.schedule[wd]) + '</div>';
+  if (editState.type === 'endtime'){
+    html += '<div class="field"><label>하원 예정 시간</label>' + timeRowHtml('end', editState.endTimeByDay[wd] || editState.schedule[wd]) + '</div>';
+  } else {
+    html += '<div class="field"><label>하원 기준</label>' +
+      '<div style="padding:11px 14px;border-radius:12px;background:var(--primary-soft);color:var(--primary-ink);font-size:12.5px;font-weight:700;">' +
+      '체크인 + ' + (editState.durationMin===90?90:60) + '분 경과 &amp; 미션 완료</div></div>';
+  }
+  html += '</div>';
+
+  html += '<div class="catLegend">' + CATEGORIES.map(function(c){
+    return '<span class="legendChip" style="color:'+c.color+'">● '+c.label+'</span>';
+  }).join('') + '</div>';
+
+  var missions = editState.missions[wd] || [];
+  html += '<div id="missionList">';
+  missions.forEach(function(m, idx){ html += missionCardHtml(m, idx); });
+  html += '</div>';
+  html += '<button type="button" class="addMissionBtn" onclick="addMission()">+ 이 요일에 미션 추가</button>';
+
+  wrap.innerHTML = html;
+}
+
+function missionCardHtml(m, idx){
+  var info = catInfo(m.category);
+  var isHomework = m.category === 'homework';
+  var isWords = m.category === 'words';
+  var isListening = m.category === 'listening';
+
+  var html = '<div class="missionCard cat-'+m.category+'">';
+  html += '<div class="missionTop">';
+  html += '<select class="catSelect" onchange="changeMissionCat(' + idx + ', this.value)">';
+  CATEGORIES.forEach(function(c){
+    html += '<option value="'+c.key+'"'+(c.key===m.category?' selected':'')+'>'+c.label+'</option>';
+  });
+  html += '</select>';
+
+  if (!isHomework){
+    if (isWords){
+      html += '<span class="legendChip" style="background:var(--gold-soft);color:#a5720c;">점수형 · 단어시험</span>';
+    } else if (isListening){
+      html += '<select class="typeSelect" onchange="changeMissionType(' + idx + ', this.value)">' +
+        '<option value="check"'+(m.type==='check'?' selected':'')+'>완료 체크</option>' +
+        '<option value="listening"'+(m.type==='listening'?' selected':'')+'>점수형 · 영어듣기</option>' +
+        '</select>';
+    } else {
+      html += '<span class="legendChip">완료 체크형</span>';
+    }
+  } else {
+    html += '<span class="legendChip" style="background:var(--violet-soft);color:var(--violet);">패드에서 5단계 선택</span>';
+  }
+
+  html += '<button type="button" class="rmBtn" onclick="removeMission(' + idx + ')">삭제</button>';
+  html += '</div>';
+
+  html += '<input type="text" placeholder="미션 내용 (예: 브릭스리딩 150)" value="'+escapeHtml(m.text||'')+'" onchange="changeMissionText(' + idx + ', this.value)">';
+
+  if (m.type === 'vocabulary' || m.type === 'listening'){
+    html += '<div class="scoreRow">만점 <input type="text" value="'+(m.scoreMax||'')+'" onchange="changeMissionScore(' + idx + ', this.value)"> 점</div>';
+  }
+  if (isHomework){
+    html += '<div class="homeworkNote">학부모 리포트에는 다른 6개 영역과 별도로 "숙제 성취율"이 표시됩니다. 완료/없음/학원에서완료는 성공으로, 미완료/미지참은 미완료로 집계됩니다.</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function addMission(){
+  syncDayInputs();
+  editState.missions[activeWD] = editState.missions[activeWD] || [];
+  editState.missions[activeWD].push({
+    text:'', category:'reading', type:'check', scoreMax:0, parentLabel:catInfo('reading').label
+  });
+  renderDayBody();
+  renderWdStrip();
+}
+function removeMission(idx){
+  editState.missions[activeWD].splice(idx,1);
+  renderDayBody();
+  renderWdStrip();
+}
+function changeMissionText(idx, val){ editState.missions[activeWD][idx].text = val; }
+function changeMissionScore(idx, val){ editState.missions[activeWD][idx].scoreMax = parseInt(val,10) || 0; }
+function changeMissionType(idx, val){
+  var m = editState.missions[activeWD][idx];
+  m.type = val;
+  if (val === 'check') m.scoreMax = 0;
+  renderDayBody();
+}
+function changeMissionCat(idx, val){
+  var m = editState.missions[activeWD][idx];
+  m.category = val;
+  m.parentLabel = catInfo(val).label;
+  if (val === 'homework'){
+    m.type = 'homework'; m.scoreMax = 0;
+    if (!m.text) m.text = '숙제 확인';
+  } else if (val === 'words'){
+    m.type = 'vocabulary'; if (!m.scoreMax) m.scoreMax = 40;
+  } else if (val === 'listening'){
+    m.type = 'check'; m.scoreMax = 0;
+  } else {
+    m.type = 'check'; m.scoreMax = 0;
+  }
+  renderDayBody();
+}
+
+/* ============================================================
+   저장 / 삭제
+   ============================================================ */
+function commitStudent(){
+  syncDayInputs();
+  editState.name = document.getElementById('f_name').value.trim();
+  if (!editState.name){
+    showToast('이름을 입력해주세요');
+    return;
+  }
+  // 토/일은 항상 비움 — 수업일에서 제외
+  editState.schedule.sat = ''; editState.schedule.sun = '';
+  editState.endTimeByDay.sat = ''; editState.endTimeByDay.sun = '';
+  editState.missions.sat = []; editState.missions.sun = [];
+
+  // 자유하원(mission)은 요일별 시계 시간 대신 durationMin(60/90)을 기준으로 삼으므로 endTimeByDay는 사용하지 않음
+  if (editState.type === 'mission'){
+    editState.endTimeByDay = {mon:'',tue:'',wed:'',thu:'',fri:'',sat:'',sun:''};
+    editState.durationMin = editState.durationMin === 90 ? 90 : 60;
+  }
+
+  var idx = roster.findIndex(function(r){ return r.id === editState.id; });
+  if (idx === -1) roster.push(editState);
+  else roster[idx] = editState;
+
+  saveRoster().then(function(){
+    showToast('저장되었습니다');
+    currentId = editState.id;
+    renderList();
+  });
+}
+
+function deleteStudent(){
+  if (!confirm(editState.name + ' 학생을 삭제할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+  roster = roster.filter(function(r){ return r.id !== editState.id; });
+  saveRoster().then(function(){
+    showToast('삭제되었습니다');
+    cancelEdit();
+  });
+}
+
+/* ============================================================
+   토스트
+   ============================================================ */
+var toastTimer;
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+</script>
+</body>
+</html>
