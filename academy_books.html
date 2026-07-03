@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 도서 관리자 모드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8EC;
+    --card:#FFFFFF;
+    --ink:#2B2420;
+    --sub:#8A7A66;
+    --line:#EDE2D0;
+    --coral:#FF7A59;
+    --coral-deep:#E85F3E;
+
+    --c-pink:#FF6FA0;
+    --c-red:#D62839;
+    --c-orange:#F77F3E;
+    --c-yellow:#EFB700;
+    --c-green:#2E9E63;
+    --c-blue:#3D7BC1;
+    --c-navy:#2A3A6A;
+    --c-purple:#8354B4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans KR',sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'Space Grotesk',monospace;}
+
+  /* ---------- PIN gate ---------- */
+  #pinGate{
+    position:fixed; inset:0; background:var(--cream);
+    display:flex; align-items:center; justify-content:center; z-index:100;
+    flex-direction:column; gap:16px;
+  }
+  #pinGate .book{font-size:48px;}
+  #pinGate h1{font-size:20px; margin:0;}
+  #pinGate input{
+    font-family:'Space Grotesk',monospace;
+    font-size:28px; letter-spacing:10px; text-align:center;
+    width:220px; padding:12px; border-radius:14px;
+    border:2px solid var(--line); background:var(--card); color:var(--ink);
+  }
+  #pinGate input:focus{outline:none; border-color:var(--coral);}
+  #pinGate .err{color:var(--c-red); font-size:13px; min-height:18px;}
+
+  /* ---------- layout ---------- */
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 80px;}
+  header.top{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:10px;}
+  header.top h1{font-size:24px; margin:0 0 4px; display:flex; align-items:center; gap:8px;}
+  header.top p{margin:0; color:var(--sub); font-size:13px;}
+  .total-badge{
+    background:var(--ink); color:var(--cream); border-radius:16px;
+    padding:10px 18px; text-align:right;
+  }
+  .total-badge .num{font-family:'Space Grotesk'; font-size:26px; font-weight:700; line-height:1;}
+  .total-badge .label{font-size:11px; opacity:.75;}
+
+  /* ---------- spectrum (signature element) ---------- */
+  .spectrum{
+    display:flex; height:34px; border-radius:10px; overflow:hidden;
+    box-shadow:0 1px 0 rgba(0,0,0,.05) inset; margin-bottom:10px;
+  }
+  .spectrum .seg{
+    flex:1 1 0; min-width:6px; cursor:pointer; transition:transform .15s, filter .15s;
+    border-right:2px solid var(--cream);
+  }
+  .spectrum .seg:last-child{border-right:none;}
+  .spectrum .seg:hover{filter:brightness(1.08);}
+  .spectrum .seg.dim{opacity:.35;}
+
+  .legend{
+    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:26px;
+  }
+  .chip{
+    display:flex; align-items:center; gap:7px;
+    background:var(--card); border:1.5px solid var(--line); border-radius:999px;
+    padding:6px 12px 6px 8px; cursor:pointer; font-size:13px; user-select:none;
+    transition:border-color .15s, background .15s;
+  }
+  .chip .dot{width:12px; height:12px; border-radius:50%; flex:none;}
+  .chip .cnt{font-family:'Space Grotesk'; font-weight:700; color:var(--sub);}
+  .chip.active{border-color:var(--ink); background:#FFF; box-shadow:0 2px 6px rgba(0,0,0,.08);}
+  .chip.active .cnt{color:var(--ink);}
+  .chip#chipAll{font-weight:700;}
+
+  /* ---------- panels ---------- */
+  .panel{
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    padding:20px 22px; margin-bottom:20px;
+  }
+  .panel h2{font-size:15px; margin:0 0 14px; display:flex; align-items:center; gap:8px;}
+  .panel h2 .tag{font-size:11px; background:var(--cream); color:var(--sub); padding:2px 8px; border-radius:8px; font-weight:400;}
+
+  .swatches{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .swatch{
+    width:auto; padding:8px 14px; border-radius:12px; border:2px solid transparent;
+    color:#fff; font-size:13px; font-weight:700; cursor:pointer; opacity:.55;
+    transition:opacity .15s, transform .1s;
+  }
+  .swatch.selected{opacity:1; border-color:var(--ink); transform:translateY(-1px);}
+
+  textarea#bulkTitles{
+    width:100%; min-height:110px; resize:vertical; padding:12px 14px;
+    border-radius:12px; border:1.5px solid var(--line); font-family:'Noto Sans KR';
+    font-size:14px; line-height:1.6; background:var(--cream);
+  }
+  textarea#bulkTitles:focus{outline:none; border-color:var(--coral);}
+
+  .bulk-preview{margin-top:12px; font-size:13px; color:var(--sub);}
+  .bulk-preview .row{
+    display:flex; gap:10px; padding:5px 0; border-bottom:1px dashed var(--line); align-items:center;
+  }
+  .bulk-preview .code{font-family:'Space Grotesk'; font-weight:700; color:var(--ink); min-width:52px;}
+
+  .btn{
+    border:none; border-radius:12px; padding:11px 20px; font-size:14px; font-weight:700;
+    cursor:pointer; font-family:'Noto Sans KR'; transition:transform .1s, opacity .15s;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--coral); color:#fff;}
+  .btn-primary:hover{background:var(--coral-deep);}
+  .btn-primary:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-ghost{background:transparent; color:var(--sub); border:1.5px solid var(--line);}
+
+  /* ---------- search ---------- */
+  .search-row{display:flex; gap:10px; margin-bottom:16px;}
+  #searchInput{
+    flex:1; padding:12px 16px; border-radius:12px; border:1.5px solid var(--line);
+    font-size:14px; background:var(--card);
+  }
+  #searchInput:focus{outline:none; border-color:var(--coral);}
+
+  /* ---------- book list ---------- */
+  .list-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .list-head h2{margin:0; font-size:15px;}
+  .list-count{font-size:12px; color:var(--sub);}
+
+  .book-row{
+    display:grid; grid-template-columns:64px 1fr 130px 60px;
+    align-items:center; gap:12px; padding:12px 14px;
+    background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:8px;
+  }
+  .book-row .code-badge{
+    font-family:'Space Grotesk'; font-weight:700; font-size:13px; text-align:center;
+    padding:6px 0; border-radius:8px; color:#fff;
+  }
+  .book-row input.title-edit{
+    border:none; background:transparent; font-size:14px; padding:6px 4px; border-radius:6px; width:100%;
+    font-family:'Noto Sans KR'; color:var(--ink);
+  }
+  .book-row input.title-edit:hover{background:var(--cream);}
+  .book-row input.title-edit:focus{outline:none; background:var(--cream); box-shadow:0 0 0 2px var(--coral) inset;}
+  .word-count-wrap{display:flex; align-items:center; gap:4px; font-size:12px; color:var(--sub);}
+  .word-count-wrap input{
+    width:70px; border:1px solid var(--line); border-radius:8px; padding:5px 6px;
+    font-family:'Space Grotesk'; font-size:13px; background:var(--cream); color:var(--ink);
+  }
+  .word-count-wrap input:focus{outline:none; border-color:var(--coral);}
+  .del-btn{
+    background:none; border:none; color:var(--sub); cursor:pointer; font-size:12px;
+    padding:6px; border-radius:8px;
+  }
+  .del-btn:hover{background:#FBEAEA; color:var(--c-red);}
+
+  .empty{
+    text-align:center; padding:40px 20px; color:var(--sub); font-size:14px;
+    background:var(--card); border:1.5px dashed var(--line); border-radius:16px;
+  }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--cream); padding:12px 20px; border-radius:12px;
+    font-size:13px; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; z-index:200;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:600px){
+    .book-row{grid-template-columns:52px 1fr 100px 40px; gap:8px; padding:10px;}
+    .total-badge{text-align:left;}
+  }
+</style>
+</head>
+<body>
+
+<div id="pinGate">
+  <div class="book">📚</div>
+  <h1>도서 관리자 모드</h1>
+  <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="PIN">
+  <div class="err" id="pinErr"></div>
+</div>
+
+<div class="wrap" id="mainApp" style="display:none;">
+
+  <header class="top">
+    <div>
+      <h1>📚 도서 관리자 모드</h1>
+      <p>핑크 → 보라, 8단계 레벨로 원서를 관리합니다</p>
+    </div>
+    <div class="total-badge">
+      <div class="num mono" id="totalCount">0</div>
+      <div class="label">전체 권수</div>
+    </div>
+  </header>
+
+  <div class="spectrum" id="spectrum"></div>
+  <div class="legend" id="legend"></div>
+
+  <div class="panel">
+    <h2>📥 책 일괄 추가 <span class="tag">레벨 선택 후 제목을 줄바꿈으로 넣으세요</span></h2>
+    <div class="swatches" id="addSwatches"></div>
+    <textarea id="bulkTitles" placeholder="한 줄에 한 권씩 제목을 입력하세요&#10;예)&#10;The Very Hungry Caterpillar&#10;Brown Bear, Brown Bear, What Do You See?"></textarea>
+    <div class="bulk-preview" id="bulkPreview"></div>
+    <div style="margin-top:14px; display:flex; gap:10px;">
+      <button class="btn btn-primary" id="bulkSaveBtn" disabled>선택한 레벨로 추가</button>
+      <button class="btn btn-ghost" id="bulkClearBtn">지우기</button>
+    </div>
+  </div>
+
+  <div class="search-row">
+    <input id="searchInput" type="text" placeholder="🔍 책 제목으로 검색...">
+  </div>
+
+  <div class="list-head">
+    <h2 id="listTitle">전체 도서</h2>
+    <span class="list-count" id="listCount"></span>
+  </div>
+  <div id="bookList"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var FIREBASE = 'https://hakwoncheck-default-rtdb.firebaseio.com';
+var ADMIN_PIN = '1234';
+
+var LEVELS = [
+  { key:'pink',   en:'Pink',   ko:'핑크', prefix:1, color:'var(--c-pink)'   },
+  { key:'red',    en:'Red',    ko:'빨강', prefix:2, color:'var(--c-red)'    },
+  { key:'orange', en:'Orange', ko:'주황', prefix:3, color:'var(--c-orange)' },
+  { key:'yellow', en:'Yellow', ko:'노랑', prefix:4, color:'var(--c-yellow)' },
+  { key:'green',  en:'Green',  ko:'초록', prefix:5, color:'var(--c-green)'  },
+  { key:'blue',   en:'Blue',   ko:'파랑', prefix:6, color:'var(--c-blue)'   },
+  { key:'navy',   en:'Navy',   ko:'남색', prefix:7, color:'var(--c-navy)'   },
+  { key:'purple', en:'Purple', ko:'보라', prefix:8, color:'var(--c-purple)' }
+];
+
+var booksCache = {};      // { "1001": {title, level, wordCount}, ... }
+var activeFilter = 'all'; // 'all' or level key
+var selectedAddLevel = null;
+var searchQuery = '';
+
+/* ---------------- Firebase REST helpers ---------------- */
+function fbGet(path){
+  return fetch(FIREBASE + '/' + path + '.json')
+    .then(function(r){ return r.json(); })
+    .catch(function(){ return null; });
+}
+function fbPatch(path, data){
+  return fetch(FIREBASE + '/' + path + '.json', {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+}
+function fbDelete(path){
+  return fetch(FIREBASE + '/' + path + '.json', { method:'DELETE' });
+}
+
+/* ---------------- utils ---------------- */
+function pad3(n){ n = String(n); while(n.length < 3) n = '0' + n; return n; }
+function levelByKey(key){
+  for (var i=0;i<LEVELS.length;i++) if (LEVELS[i].key === key) return LEVELS[i];
+  return null;
+}
+function levelByEnName(en){
+  for (var i=0;i<LEVELS.length;i++) if (LEVELS[i].en === en) return LEVELS[i];
+  return null;
+}
+function nextCodeForLevel(prefixDigit){
+  var max = 0;
+  Object.keys(booksCache).forEach(function(code){
+    if (parseInt(code.charAt(0),10) === prefixDigit){
+      var seq = parseInt(code.slice(1),10);
+      if (!isNaN(seq) && seq > max) max = seq;
+    }
+  });
+  return String(prefixDigit) + pad3(max + 1);
+}
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 1800);
+}
+
+/* ---------------- PIN gate ---------------- */
+var pinInput = document.getElementById('pinInput');
+pinInput.addEventListener('input', function(){
+  if (pinInput.value.length === 4){
+    if (pinInput.value === ADMIN_PIN){
+      document.getElementById('pinGate').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      init();
+    } else {
+      document.getElementById('pinErr').textContent = 'PIN이 올바르지 않습니다';
+      pinInput.value = '';
+    }
+  }
+});
+setTimeout(function(){ pinInput.focus(); }, 300);
+
+/* ---------------- init & render ---------------- */
+function init(){
+  renderAddSwatches();
+  loadBooks();
+
+  document.getElementById('searchInput').addEventListener('input', function(e){
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderList();
+  });
+  document.getElementById('bulkTitles').addEventListener('input', renderBulkPreview);
+  document.getElementById('bulkSaveBtn').addEventListener('click', saveBulkTitles);
+  document.getElementById('bulkClearBtn').addEventListener('click', function(){
+    document.getElementById('bulkTitles').value = '';
+    renderBulkPreview();
+  });
+}
+
+function loadBooks(){
+  fbGet('booklibrary').then(function(data){
+    booksCache = data || {};
+    renderDashboard();
+    renderList();
+  });
+}
+
+function renderDashboard(){
+  var codes = Object.keys(booksCache);
+  document.getElementById('totalCount').textContent = codes.length;
+
+  var counts = {};
+  LEVELS.forEach(function(lv){ counts[lv.key] = 0; });
+  codes.forEach(function(code){
+    var b = booksCache[code];
+    var lv = levelByEnName(b && b.level);
+    if (lv) counts[lv.key]++;
+  });
+
+  // spectrum bar
+  var spectrum = document.getElementById('spectrum');
+  spectrum.innerHTML = '';
+  LEVELS.forEach(function(lv){
+    var seg = document.createElement('div');
+    seg.className = 'seg' + (counts[lv.key] === 0 ? ' dim' : '');
+    seg.style.background = lv.color;
+    seg.style.flexGrow = counts[lv.key] > 0 ? counts[lv.key] : 0.4;
+    seg.title = lv.ko + '(' + lv.en + ') ' + counts[lv.key] + '권';
+    seg.addEventListener('click', function(){ setFilter(lv.key); });
+    spectrum.appendChild(seg);
+  });
+
+  // legend chips
+  var legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  var allChip = document.createElement('div');
+  allChip.className = 'chip' + (activeFilter === 'all' ? ' active' : '');
+  allChip.id = 'chipAll';
+  allChip.innerHTML = '전체 <span class="cnt mono">' + codes.length + '</span>';
+  allChip.addEventListener('click', function(){ setFilter('all'); });
+  legend.appendChild(allChip);
+
+  LEVELS.forEach(function(lv){
+    var chip = document.createElement('div');
+    chip.className = 'chip' + (activeFilter === lv.key ? ' active' : '');
+    chip.innerHTML = '<span class="dot" style="background:' + lv.color + '"></span>' +
+                      lv.ko + '(' + lv.en + ') <span class="cnt mono">' + counts[lv.key] + '</span>';
+    chip.addEventListener('click', function(k){ return function(){ setFilter(k); }; }(lv.key));
+    legend.appendChild(chip);
+  });
+}
+
+function setFilter(key){
+  activeFilter = key;
+  renderDashboard();
+  renderList();
+}
+
+function renderAddSwatches(){
+  var wrap = document.getElementById('addSwatches');
+  wrap.innerHTML = '';
+  LEVELS.forEach(function(lv){
+    var sw = document.createElement('div');
+    sw.className = 'swatch' + (selectedAddLevel === lv.key ? ' selected' : '');
+    sw.style.background = lv.color;
+    sw.textContent = lv.ko + ' ' + lv.en;
+    sw.addEventListener('click', function(){
+      selectedAddLevel = lv.key;
+      renderAddSwatches();
+      renderBulkPreview();
+    });
+    wrap.appendChild(sw);
+  });
+}
+
+function getBulkTitleList(){
+  var raw = document.getElementById('bulkTitles').value;
+  return raw.split('\n').map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 0; });
+}
+
+function renderBulkPreview(){
+  var titles = getBulkTitleList();
+  var preview = document.getElementById('bulkPreview');
+  var saveBtn = document.getElementById('bulkSaveBtn');
+
+  if (!selectedAddLevel || titles.length === 0){
+    preview.innerHTML = '';
+    saveBtn.disabled = true;
+    return;
+  }
+
+  var lv = levelByKey(selectedAddLevel);
+  var startSeq = parseInt(nextCodeForLevel(lv.prefix).slice(1), 10);
+  var rows = titles.map(function(title, i){
+    var code = String(lv.prefix) + pad3(startSeq + i);
+    return '<div class="row"><span class="code mono">' + code + '</span><span>' + escapeHtml(title) + '</span></div>';
+  });
+  preview.innerHTML = '<div style="margin-bottom:6px; color:var(--ink); font-weight:700;">' +
+    lv.ko + '(' + lv.en + ') 레벨로 ' + titles.length + '권 추가 예정</div>' + rows.join('');
+  saveBtn.disabled = false;
+}
+
+function saveBulkTitles(){
+  var titles = getBulkTitleList();
+  if (!selectedAddLevel || titles.length === 0) return;
+  var lv = levelByKey(selectedAddLevel);
+  var startSeq = parseInt(nextCodeForLevel(lv.prefix).slice(1), 10);
+
+  var patch = {};
+  titles.forEach(function(title, i){
+    var code = String(lv.prefix) + pad3(startSeq + i);
+    patch[code] = { title: title, level: lv.en, wordCount: 0 };
+  });
+
+  document.getElementById('bulkSaveBtn').disabled = true;
+  fbPatch('booklibrary', patch).then(function(){
+    Object.keys(patch).forEach(function(code){ booksCache[code] = patch[code]; });
+    document.getElementById('bulkTitles').value = '';
+    renderBulkPreview();
+    renderDashboard();
+    renderList();
+    showToast(lv.ko + ' 레벨에 ' + titles.length + '권 추가 완료');
+  });
+}
+
+function escapeHtml(s){
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderList(){
+  var listTitle = document.getElementById('listTitle');
+  var listCount = document.getElementById('listCount');
+  var container = document.getElementById('bookList');
+
+  var entries = Object.keys(booksCache).map(function(code){
+    return Object.assign({ code: code }, booksCache[code]);
+  });
+
+  if (activeFilter !== 'all'){
+    var lv = levelByKey(activeFilter);
+    entries = entries.filter(function(b){ return b.level === lv.en; });
+    listTitle.textContent = lv.ko + '(' + lv.en + ') 도서';
+  } else {
+    listTitle.textContent = '전체 도서';
+  }
+
+  if (searchQuery){
+    entries = entries.filter(function(b){
+      return (b.title || '').toLowerCase().indexOf(searchQuery) !== -1;
+    });
+  }
+
+  entries.sort(function(a,b){ return a.code.localeCompare(b.code); });
+  listCount.textContent = entries.length + '권';
+
+  if (entries.length === 0){
+    container.innerHTML = '<div class="empty">' +
+      (searchQuery ? '검색 결과가 없어요.' : '아직 등록된 책이 없어요. 위에서 제목을 추가해보세요.') +
+      '</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  entries.forEach(function(b){
+    var lv = levelByEnName(b.level) || {};
+    var row = document.createElement('div');
+    row.className = 'book-row';
+
+    var badge = document.createElement('div');
+    badge.className = 'code-badge';
+    badge.style.background = lv.color || '#999';
+    badge.textContent = b.code;
+    row.appendChild(badge);
+
+    var titleInput = document.createElement('input');
+    titleInput.className = 'title-edit';
+    titleInput.type = 'text';
+    titleInput.value = b.title || '';
+    titleInput.addEventListener('change', function(){
+      updateField(b.code, 'title', titleInput.value.trim());
+    });
+    row.appendChild(titleInput);
+
+    var wcWrap = document.createElement('div');
+    wcWrap.className = 'word-count-wrap';
+    var wcInput = document.createElement('input');
+    wcInput.type = 'number';
+    wcInput.min = '0';
+    wcInput.placeholder = '미입력';
+    wcInput.value = b.wordCount ? b.wordCount : '';
+    wcInput.addEventListener('change', function(){
+      var val = parseInt(wcInput.value, 10);
+      if (isNaN(val) || val < 0) val = 0;
+      updateField(b.code, 'wordCount', val);
+    });
+    wcWrap.appendChild(wcInput);
+    wcWrap.appendChild(document.createTextNode('어휘'));
+    row.appendChild(wcWrap);
+
+    var delBtn = document.createElement('button');
+    delBtn.className = 'del-btn';
+    delBtn.textContent = '삭제';
+    delBtn.addEventListener('click', function(){
+      if (confirm('"' + (b.title || b.code) + '" 책을 삭제할까요?')){
+        deleteBook(b.code);
+      }
+    });
+    row.appendChild(delBtn);
+
+    container.appendChild(row);
+  });
+}
+
+function updateField(code, field, value){
+  var patch = {};
+  patch[field] = value;
+  fbPatch('booklibrary/' + code, patch).then(function(){
+    if (booksCache[code]) booksCache[code][field] = value;
+    showToast('저장되었습니다');
+  });
+}
+
+function deleteBook(code){
+  fbDelete('booklibrary/' + code).then(function(){
+    delete booksCache[code];
+    renderDashboard();
+    renderList();
+    showToast('삭제되었습니다');
+  });
+}
+</script>
+</body>
+</html>
