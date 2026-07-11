@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>학원 출결</title>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #FFF8EC;
+    --card: #ffffff;
+    --line: #FFE1B3;
+    --ink: #3E332B;
+    --muted: #A8968A;
+    --coral: #FF7A59;
+    --mint: #3DD9B0;
+    --sun: #FFC94D;
+    --leaf: #4CAF6E;
+    --berry: #FF6584;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    overflow:hidden;
+  }
+  .hidden{ display:none !important; }
+
+  /* ---------- 체크인(패드) 모드 ---------- */
+  #view-checkin{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    text-align:center;
+  }
+  #ci-display{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:38px;
+    font-weight:700;
+    letter-spacing:5px;
+    min-height:52px;
+    margin-bottom:18px;
+    color:var(--muted);
+  }
+  #ci-display.filled{ color:var(--ink); }
+  #ci-msg{
+    font-family:'Do Hyeon', 'Noto Sans KR', sans-serif;
+    font-size:19px;
+    line-height:1.6;
+    max-width:440px;
+    min-height:90px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    white-space:pre-line;
+    color:var(--muted);
+  }
+  #ci-msg.ok{ color:var(--leaf); }
+  #ci-msg.warn{ color:var(--sun); }
+  #ci-msg.err{ color:var(--berry); }
+
+  .keypad{
+    display:grid;
+    grid-template-columns:repeat(3, 76px);
+    gap:12px;
+    margin-top:16px;
+  }
+  .keypad button{
+    width:76px; height:76px;
+    border-radius:18px;
+    border:2px solid var(--line);
+    background:var(--card);
+    color:var(--ink);
+    font-size:24px;
+    font-weight:700;
+    font-family:'Space Grotesk', sans-serif;
+    box-shadow:0 2px 0 var(--line);
+  }
+  .keypad button:active{ background:var(--coral); border-color:var(--coral); color:#fff; box-shadow:none; transform:translateY(2px); }
+  .keypad .wide{ font-size:14px; font-family:'Noto Sans KR', sans-serif; }
+  .keypad button[data-k="enter"]{ background:var(--coral); border-color:var(--coral); color:#fff; }
+
+  /* ---------- TV 모니터 모드 ---------- */
+  #view-tv{
+    height:100vh;
+    padding:28px 34px;
+    display:flex;
+    flex-direction:column;
+  }
+  #tv-clock{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:18px;
+    color:var(--muted);
+    margin-bottom:18px;
+  }
+  #tv-grid{
+    flex:1;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:22px;
+    align-content:start;
+    overflow:hidden;
+  }
+  .stu-card{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 3px 10px rgba(62,51,43,0.07);
+    display:flex;
+    align-items:center;
+    gap:20px;
+  }
+  .stu-card .ring{
+    width:96px; height:96px;
+    min-width:96px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    transition:background 0.4s ease;
+  }
+  .stu-card .ring-inner{
+    width:76px; height:76px;
+    border-radius:50%;
+    background:var(--card);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Space Grotesk', sans-serif;
+    font-size:20px;
+    font-weight:700;
+  }
+  .stu-card .mood{
+    position:absolute;
+    bottom:-8px; right:-8px;
+    width:32px; height:32px;
+    border-radius:50%;
+    background:var(--card);
+    border:2px solid var(--card);
+    box-shadow:0 1px 4px rgba(62,51,43,0.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:19px;
+  }
+  .stu-card.ring-done .ring{ animation:pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.08); }
+  }
+
+  /* 컨페티 */
+  #confetti-layer{
+    position:fixed; inset:0;
+    pointer-events:none;
+    overflow:hidden;
+    z-index:999;
+  }
+  .confetti-piece{
+    position:absolute;
+    top:-20px;
+    border-radius:2px;
+    animation:confetti-fall linear forwards;
+  }
+  @keyframes confetti-fall{
+    0%{ transform:translateY(0) rotate(0deg); opacity:1; }
+    100%{ transform:translateY(110vh) rotate(720deg); opacity:0.9; }
+  }
+  .stu-card .info{ flex:1; min-width:0; }
+  .stu-card .name{
+    font-family:'Do Hyeon', 'Noto Sans KR', sans-serif;
+    font-size:24px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+  .stu-card .row{
+    display:flex;
+    justify-content:space-between;
+    font-size:16px;
+    color:var(--muted);
+    margin-top:8px;
+    white-space:nowrap;
+    gap:10px;
+  }
+  .stu-card .row b{ color:var(--ink); font-weight:700; }
+  .stu-card.state-warn{ border-color:var(--sun); background:#FFFBF0; }
+  .stu-card.state-warn .name{ color:#B8860B; }
+  .stu-card.state-done{ border-color:var(--leaf); background:#F3FBF5; }
+
+  #tv-late{
+    margin-top:14px;
+    font-size:13px;
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  #tv-late .late-label{ color:var(--muted); }
+  #tv-late .late-name{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    background:#FFECEF;
+    color:var(--berry);
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:999px;
+  }
+</style>
+</head>
+<body>
+
+<!-- 학생 체크인 화면 (패드) -->
+<div id="view-checkin" class="hidden">
+  <div id="ci-display"></div>
+  <div id="ci-msg"></div>
+  <div class="keypad">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button data-k="clear" class="wide">지우기</button>
+    <button data-k="0">0</button>
+    <button data-k="enter" class="wide">확인</button>
+  </div>
+</div>
+
+<!-- TV 모니터 화면 -->
+<div id="view-tv" class="hidden">
+  <div id="tv-clock"></div>
+  <div id="tv-grid"></div>
+  <div id="tv-late"></div>
+  <div id="confetti-layer"></div>
+</div>
+
+<script>
+// ================= 공통 =================
+var FIREBASE = 'https://hakwoncheck-default-rtdb.firebaseio.com';
+var WD_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+var FORCE_CODE = '3699'; // 강제 하원 관리자 코드 (2026-07 추가)
+
+function fbGet(path){
+  return fetch(FIREBASE + '/' + path + '.json')
+    .then(function(r){ return r.json(); })
+    .catch(function(){ return null; });
+}
+function fbSet(path, data){
+  return fetch(FIREBASE + '/' + path + '.json', {
+    method:'PUT',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify(data)
+  });
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+function todayKey(){
+  var d = new Date();
+  return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+}
+function monthKey(){
+  var d = new Date();
+  return d.getFullYear() + '-' + pad2(d.getMonth()+1);
+}
+function dateKeyFromTs(ts){
+  var d = new Date(ts);
+  return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
+}
+function monthKeyFromTs(ts){
+  var d = new Date(ts);
+  return d.getFullYear() + '-' + pad2(d.getMonth()+1);
+}
+function isSameDay(ts, now){
+  var d = new Date(ts), n = new Date(now);
+  return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
+}
+function todayWD(){ return WD_KEYS[new Date().getDay()]; }
+
+// 12시간제 표기: "오후 2:15" 형태
+function fmt12(date){
+  var h = date.getHours();
+  var m = date.getMinutes();
+  var ap = h < 12 ? '오전' : '오후';
+  var h12 = h % 12; if (h12 === 0) h12 = 12;
+  return ap + ' ' + h12 + ':' + pad2(m);
+}
+function fmtMinutes(mins){
+  if (mins < 60) return mins + '분';
+  var h = Math.floor(mins/60), m = mins % 60;
+  return h + '시간' + (m ? ' ' + m + '분' : '');
+}
+
+// 하원 계산 (본 모듈 전용 규칙: mission 타입은 durationMin + 5분 버퍼)
+function computeEnd(stu, startTime){
+  if (stu.type === 'endtime') {
+    var today = todayWD();
+    var timeVal = (stu.endTimeByDay && stu.endTimeByDay[today]) || stu.endTimeVal || '';
+    if (timeVal) {
+      var parts = timeVal.split(':');
+      var d = new Date(startTime);
+      d.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+      return d.getTime();
+    }
+    return startTime + 60*60000;
+  }
+  if (stu.type === 'mission') {
+    var mins = (stu.durationMin === 90) ? 90 : 60;
+    return startTime + (mins + 5) * 60000; // durationMin + 5분 버퍼 (2026-07 확정)
+  }
+  return startTime + 60*60000;
+}
+
+function isMissionComplete(m){
+  if (m.category === 'homework') {
+    return m.status === 'done' || m.status === 'none' || m.status === 'doneAtAcademy';
+  }
+  return !!m.done;
+}
+function missionProgress(missions){
+  missions = missions || [];
+  var total = missions.length, done = 0;
+  missions.forEach(function(m){ if (isMissionComplete(m)) done++; });
+  return { done: done, total: total, allDone: total > 0 ? (done === total) : true };
+}
+
+// 하원 가능 여부 판정 (타입별)
+function canCheckOut(stu, session, now){
+  var end = computeEnd(stu, session.startTime);
+  if (stu.type === 'endtime') {
+    // 하원시간 5분 전부터는 미션 여부와 무관하게 무조건 하원 가능
+    return now >= (end - 5*60000);
+  }
+  if (stu.type === 'mission') {
+    var prog = missionProgress(session.missions);
+    return now >= end && prog.allDone;
+  }
+  return now >= end;
+}
+
+// ================= 모드 분기 =================
+var params = new URLSearchParams(location.search);
+var MODE = params.get('mode') === 'tv' ? 'tv' : 'checkin';
+
+if (MODE === 'tv') {
+  document.getElementById('view-tv').classList.remove('hidden');
+  initTV();
+} else {
+  document.getElementById('view-checkin').classList.remove('hidden');
+  initCheckin();
+}
+
+// ================= 체크인(패드) 모드 =================
+function buildScores(missions){
+  var out = {};
+  (missions || []).forEach(function(m){
+    if (m.score === null || m.score === undefined) return;
+    if (m.type === 'listening' || m.type === 'vocabulary') {
+      var key = m.type === 'listening' ? 'listening' : 'vocabulary';
+      if (!out[key]) out[key] = [];
+      out[key].push({ score: m.score, max: m.scoreMax || 0 });
+    }
+  });
+  return out;
+}
+
+// 하원을 누르지 않고 넘어간 세션을 관리자용 흔적으로만 마감 처리.
+// autoClosed:true 로 표시되어 먼슬리 리포트 집계에서는 조용히 제외된다.
+function archiveStaleSession(stu, session){
+  var prog = missionProgress(session.missions);
+  var record = {
+    name: stu.name,
+    level: stu.level || '',
+    checkIn: session.startTime,
+    checkOut: null,
+    missionsTotal: prog.total,
+    missionsDone: prog.done,
+    missions: session.missions || [],
+    books: session.books || [],
+    scores: buildScores(session.missions),
+    month: monthKeyFromTs(session.startTime),
+    autoClosed: true
+  };
+  var dateKey = dateKeyFromTs(session.startTime);
+  return fbSet('attendance/' + stu.id + '/' + dateKey, record).then(function(){
+    return fbSet('sessions/' + stu.id, null);
+  });
+}
+
+// 관리자 강제 하원 처리: 시간/미션 조건 무시하고 즉시 하원 처리.
+// forcedCheckout:true 로 표시되어 정상 출석 통계에는 포함되지만 관리자가 구분 가능. (2026-07 추가)
+function forceCheckout(stu, session){
+  var now = Date.now();
+  var prog = missionProgress(session.missions);
+  var attendance = {
+    name: stu.name,
+    level: stu.level || '',
+    checkIn: session.startTime,
+    checkOut: now,
+    missionsTotal: prog.total,
+    missionsDone: prog.done,
+    missions: session.missions || [],
+    books: session.books || [],
+    scores: buildScores(session.missions),
+    month: monthKeyFromTs(session.startTime),
+    forcedCheckout: true
+  };
+  var dateKey = dateKeyFromTs(session.startTime);
+  return fbSet('attendance/' + stu.id + '/' + dateKey, attendance).then(function(){
+    return fbSet('sessions/' + stu.id, null);
+  }).then(function(){
+    return { text: stu.name + ' 학생 강제 하원 처리되었습니다.', cls:'ok' };
+  });
+}
+
+function initCheckin(){
+  var buf = '';
+  var display = document.getElementById('ci-display');
+  var msg = document.getElementById('ci-msg');
+  var busy = false;
+  var pendingForce = null;   // { stu, session } 강제 하원 확인 대기 상태
+  var pendingTimer = null;
+
+  function clearPending(){
+    pendingForce = null;
+    if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+  }
+
+  function render(){
+    if (pendingForce) {
+      display.textContent = pendingForce.stu.name;
+      display.className = 'filled';
+      return;
+    }
+    display.textContent = buf || '번호를 입력하세요';
+    display.className = buf ? 'filled' : '';
+  }
+  function showMsg(text, cls){
+    msg.textContent = text;
+    msg.className = cls || '';
+  }
+  function resetSoon(){
+    setTimeout(function(){
+      buf = '';
+      render();
+      showMsg('', '');
+    }, 4000);
+  }
+
+  render();
+
+  document.querySelectorAll('.keypad button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var k = btn.getAttribute('data-k');
+      if (busy) return;
+      if (k === 'clear') {
+        buf = '';
+        if (pendingForce) {
+          clearPending();
+          showMsg('취소되었습니다.', '');
+        }
+        render();
+        return;
+      }
+      if (k === 'enter') { submit(); return; }
+      if (pendingForce) clearPending(); // 숫자 입력 시 대기 중인 강제 하원 확인은 취소
+      if (buf.length < 10) buf += k;
+      render();
+    });
+  });
+
+  function submit(){
+    // 강제 하원 2단계: 확인 버튼을 한 번 더 눌러 최종 처리
+    if (pendingForce && !buf) {
+      busy = true;
+      showMsg('처리 중...', '');
+      var pf = pendingForce;
+      clearPending();
+      forceCheckout(pf.stu, pf.session).then(function(result){
+        showMsg(result.text, result.cls);
+        render();
+        resetSoon();
+      }).catch(function(){
+        showMsg('오류가 발생했습니다. 다시 시도해주세요.', 'err');
+        resetSoon();
+      }).finally(function(){ busy = false; });
+      return;
+    }
+
+    if (!buf) return;
+
+    // 관리자 강제 하원 명령: FORCE_CODE(4자리) + 학생번호(4자리) = 8자리
+    if (buf.length === 8 && buf.slice(0, 4) === FORCE_CODE) {
+      var targetNum = buf.slice(4);
+      buf = '';
+      render();
+      busy = true;
+      showMsg('확인 중...', '');
+      fbGet('roster').then(function(roster){
+        roster = roster || [];
+        var stu = roster.find(function(s){ return s.number === targetNum; });
+        if (!stu) {
+          showMsg('등록되지 않은 번호입니다.', 'err');
+          resetSoon();
+          return;
+        }
+        return fbGet('sessions/' + stu.id).then(function(session){
+          if (!session) {
+            showMsg('현재 등원 중인 학생이 아닙니다.', 'err');
+            resetSoon();
+            return;
+          }
+          pendingForce = { stu: stu, session: session };
+          render();
+          showMsg(stu.name + ' 학생을 강제 하원 처리할까요?\n확인을 한 번 더 눌러주세요.', 'warn');
+          pendingTimer = setTimeout(function(){
+            clearPending();
+            render();
+            showMsg('', '');
+          }, 8000);
+        });
+      }).catch(function(){
+        showMsg('오류가 발생했습니다. 다시 시도해주세요.', 'err');
+        resetSoon();
+      }).finally(function(){ busy = false; });
+      return;
+    }
+
+    // 일반 체크인/체크아웃 흐름
+    busy = true;
+    showMsg('확인 중...', '');
+    handleSubmit(buf).then(function(result){
+      showMsg(result.text, result.cls);
+      buf = '';
+      render();
+      resetSoon();
+    }).catch(function(){
+      showMsg('오류가 발생했습니다. 다시 시도해주세요.', 'err');
+      buf = '';
+      render();
+      resetSoon();
+    }).finally(function(){
+      busy = false;
+    });
+  }
+
+  function handleSubmit(numStr){
+    return fbGet('roster').then(function(roster){
+      roster = roster || [];
+      var stu = roster.find(function(s){ return s.number === numStr; });
+      if (!stu) return { text:'등록되지 않은 번호입니다.', cls:'err' };
+
+      return fbGet('sessions').then(function(sessions){
+        sessions = sessions || {};
+        var existing = sessions[stu.id];
+
+        if (!existing) {
+          return doCheckIn(stu, sessions);
+        } else if (!isSameDay(existing.startTime, Date.now())) {
+          // 하원을 안 누르고 넘어간 지난 세션 → 조용히 마감 후 오늘 체크인 진행
+          return archiveStaleSession(stu, existing).then(function(){
+            return doCheckIn(stu, sessions);
+          });
+        } else {
+          return doCheckOut(stu, existing, sessions);
+        }
+      });
+    });
+  }
+
+  function doCheckIn(stu, sessions){
+    var now = Date.now();
+    var end = computeEnd(stu, now);
+    var remainMin = Math.max(0, Math.round((end - now) / 60000));
+
+    var today = todayWD();
+    var tmpl = (stu.missions && stu.missions[today]) || [];
+    var missions = tmpl.map(function(m, i){
+      return {
+        id: 'm' + i,
+        text: m.text || '',
+        category: m.category || 'other',
+        type: m.type || 'check',
+        scoreMax: parseInt(m.scoreMax || 0, 10),
+        parentLabel: m.parentLabel || '',
+        done: false,
+        score: null
+      };
+    });
+
+    var session = {
+      name: stu.name,
+      number: stu.number,
+      type: stu.type,
+      level: stu.level || '',
+      startTime: now,
+      endTime: end,
+      missions: missions,
+      books: []
+    };
+
+    return fbSet('sessions/' + stu.id, session).then(function(){
+      return { text: stu.name + '님, 등원했습니다.\n남은 학습시간 약 ' + fmtMinutes(remainMin), cls:'ok' };
+    });
+  }
+
+  function doCheckOut(stu, session, sessions){
+    var now = Date.now();
+    if (!canCheckOut(stu, session, now)) {
+      if (stu.type === 'mission') {
+        var prog = missionProgress(session.missions);
+        if (!prog.allDone) {
+          return Promise.resolve({ text:'아직 미션이 끝나지 않았어요. 마저 완료해볼까요?', cls:'warn' });
+        }
+        return Promise.resolve({ text:'아직 하원 시간이 되지 않았어요.', cls:'warn' });
+      }
+      return Promise.resolve({ text:'아직 하원 시간이 되지 않았어요.', cls:'warn' });
+    }
+
+    var prog = missionProgress(session.missions);
+    var attendance = {
+      name: stu.name,
+      level: stu.level || '',
+      checkIn: session.startTime,
+      checkOut: now,
+      missionsTotal: prog.total,
+      missionsDone: prog.done,
+      missions: session.missions || [],
+      books: session.books || [],
+      scores: buildScores(session.missions),
+      month: monthKey()
+    };
+
+    return fbSet('attendance/' + stu.id + '/' + todayKey(), attendance).then(function(){
+      return fbSet('sessions/' + stu.id, null);
+    }).then(function(){
+      if (prog.allDone) {
+        return { text:'미션을 완료했습니다.\n집에 가도 좋습니다.', cls:'ok' };
+      }
+      return { text:'오늘도 수고했습니다.\n내일 더 열심히 합시다.', cls:'ok' };
+    });
+  }
+
+}
+
+// ================= TV 모니터 모드 =================
+function initTV(){
+  var clockEl = document.getElementById('tv-clock');
+  var gridEl = document.getElementById('tv-grid');
+  var lateEl = document.getElementById('tv-late');
+  var confettiLayer = document.getElementById('confetti-layer');
+  var roster = [];
+  var celebrated = {}; // 학생별 100% 빵빠레 1회 제한
+  var archivingInFlight = {}; // 3시간 경과 세션 중복 아카이빙 방지
+
+  var CONFETTI_COLORS = ['#FF7A59','#FFC94D','#3DD9B0','#4CAF6E','#FF6584','#6EC6FF'];
+  function spawnConfetti(){
+    for (var i = 0; i < 40; i++) {
+      var piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      var size = 6 + Math.random() * 6;
+      piece.style.left = (Math.random() * 100) + 'vw';
+      piece.style.width = size + 'px';
+      piece.style.height = (size * 0.4) + 'px';
+      piece.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+      piece.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
+      piece.style.animationDelay = (Math.random() * 0.3) + 's';
+      confettiLayer.appendChild(piece);
+      (function(el){
+        setTimeout(function(){ el.remove(); }, 3500);
+      })(piece);
+    }
+  }
+
+  function tickClock(){
+    clockEl.textContent = fmt12(new Date());
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  function loadRoster(){
+    return fbGet('roster').then(function(r){ roster = r || []; });
+  }
+  function rosterById(id){
+    return roster.find(function(s){ return s.id === id; });
+  }
+
+  function render(){
+    fbGet('sessions').then(function(sessions){
+      sessions = sessions || {};
+      var now = Date.now();
+      gridEl.innerHTML = '';
+
+      Object.keys(sessions).forEach(function(id){
+        var s = sessions[id];
+        if (!s || !s.startTime) return;
+
+        // 3시간 경과 시 화면에서 숨기고, 관리자용 흔적만 남긴 뒤 조용히 마감 처리
+        if (now - s.startTime >= 3 * 60 * 60000) {
+          if (!archivingInFlight[id]) {
+            archivingInFlight[id] = true;
+            var stuForArchive = rosterById(id) || { id: id, name: s.name };
+            archiveStaleSession(stuForArchive, s).catch(function(){}).finally(function(){
+              archivingInFlight[id] = false;
+            });
+          }
+          return;
+        }
+
+        var stu = rosterById(id);
+        var type = (stu && stu.type) || s.type;
+        var end = stu ? computeEnd(stu, s.startTime) : s.endTime;
+        var prog = missionProgress(s.missions);
+        var pct = prog.total ? Math.round(prog.done / prog.total * 100) : 0;
+
+        var state = 'studying';
+        if (type === 'endtime') {
+          if (now >= end - 5*60000) state = 'warn';
+        } else if (type === 'mission') {
+          if (now >= end && prog.allDone) state = 'done';
+          else if (now >= end) state = 'warn'; // 시간은 됐는데 미션 남음
+        }
+
+        var remainMs = Math.max(0, end - now);
+        var remainLabel = state === 'done' ? '하원 가능' : fmtMinutes(Math.ceil(remainMs/60000)) + ' 남음';
+
+        var stateEmoji = state === 'done' ? '✅' : (state === 'warn' ? '⏰' : '📖');
+        var ringColor = pct >= 100 ? 'var(--leaf)' : (pct >= 75 ? 'var(--sun)' : 'var(--berry)');
+        var mood = pct >= 100 ? '🎉' : (pct >= 75 ? '😎' : (pct >= 40 ? '🙂' : '😐'));
+
+        var card = document.createElement('div');
+        card.className = 'stu-card' + (state === 'warn' ? ' state-warn' : '') + (state === 'done' ? ' state-done' : '') + (pct >= 100 ? ' ring-done' : '');
+        card.innerHTML =
+          '<div class="ring" style="background:conic-gradient(' + ringColor + ' ' + (pct*3.6) + 'deg, ' + ringColor + '33 0)">' +
+            '<div class="ring-inner">' + pct + '%</div>' +
+            '<div class="mood">' + mood + '</div>' +
+          '</div>' +
+          '<div class="info">' +
+            '<div class="name">' + stateEmoji + ' ' + s.name + '</div>' +
+            '<div class="row"><span>남은시간</span><b>' + remainLabel + '</b></div>' +
+          '</div>';
+        gridEl.appendChild(card);
+
+        // 미션 100% 완료 순간 빵빠레 (학생당 1회만)
+        if (pct >= 100 && !celebrated[id]) {
+          celebrated[id] = true;
+          spawnConfetti();
+        }
+        if (pct < 100) celebrated[id] = false;
+      });
+
+      renderLate(sessions, now);
+    });
+  }
+
+  function renderLate(sessions, now){
+    var today = todayWD();
+    var overdue = roster.filter(function(stu){
+      if (sessions[stu.id]) return false;
+      var sc = stu.schedule && stu.schedule[today];
+      if (!sc) return false;
+      var parts = sc.split(':');
+      var expected = new Date();
+      expected.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+      return now - expected.getTime() >= 5*60000;
+    });
+    if (!overdue.length) { lateEl.innerHTML = ''; return; }
+    lateEl.innerHTML = '<span class="late-label">미체크인</span>' + overdue.map(function(s){
+      return '<span class="late-name">⚠ ' + s.name + '</span>';
+    }).join('');
+  }
+
+  loadRoster().then(render);
+  setInterval(render, 3000);
+  setInterval(loadRoster, 30000);
+}
+</script>
+</body>
+</html>
