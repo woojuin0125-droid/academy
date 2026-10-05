@@ -450,6 +450,7 @@ function newStudent(){
   };
   currentId = editState.id;
   activeWD = 'mon';
+  copySel = null;
   renderEditor(true);
 }
 function openStudent(id){
@@ -457,6 +458,8 @@ function openStudent(id){
   if (!s) return;
   editState = JSON.parse(JSON.stringify(s));
   if (!editState.durationMin) editState.durationMin = 60; // 하위호환: 옛 데이터 기본값
+  normalizeMissionTypes(editState); // 옛 점수형(듣기/단어) 템플릿 → 완료 체크형
+  copySel = null;
   currentId = id;
   activeWD = 'mon';
   renderList();
@@ -553,7 +556,7 @@ function renderWdStrip(){
     var mCount = (editState.missions[wd]||[]).length;
     chip.className = 'wdChip' + (wd===activeWD?' active':'') + (mCount>0?' hasMission':'');
     chip.innerHTML = WD_LABELS[wd] + '<span class="cnt">'+mCount+'</span>';
-    chip.onclick = function(){ syncDayInputs(); activeWD = wd; renderWdStrip(); renderDayBody(); };
+    chip.onclick = function(){ syncDayInputs(); activeWD = wd; copySel = null; renderWdStrip(); renderDayBody(); };
     wrap.appendChild(chip);
   });
 }
@@ -596,6 +599,7 @@ function renderDayBody(){
   missions.forEach(function(m, idx){ html += missionCardHtml(m, idx); });
   html += '</div>';
   html += '<button type="button" class="addMissionBtn" onclick="addMission()">+ 이 요일에 미션 추가</button>';
+  html += renderCopyPanel();
 
   wrap.innerHTML = html;
 }
@@ -615,13 +619,7 @@ function missionCardHtml(m, idx){
   html += '</select>';
 
   if (!isHomework){
-    if (isWords){
-      html += '<span class="legendChip" style="background:var(--gold-soft);color:#a5720c;">점수형 · 단어시험</span>';
-    } else if (isListening){
-      html += '<span class="legendChip" style="background:var(--gold-soft);color:#a5720c;">점수형 · 영어듣기 (문제 수에 따라 만점 조정)</span>';
-    } else {
-      html += '<span class="legendChip">완료 체크형</span>';
-    }
+    html += '<span class="legendChip">완료 체크형</span>';
   } else {
     html += '<span class="legendChip" style="background:var(--violet-soft);color:var(--violet);">패드에서 5단계 선택</span>';
   }
@@ -631,15 +629,61 @@ function missionCardHtml(m, idx){
 
   html += '<input type="text" placeholder="미션 내용 (예: 브릭스리딩 150)" value="'+escapeHtml(m.text||'')+'" onchange="changeMissionText(' + idx + ', this.value)">';
 
-  if (m.type === 'vocabulary' || m.type === 'listening'){
-    html += '<div class="scoreRow">만점 <input type="text" value="'+(m.scoreMax||'')+'" onchange="changeMissionScore(' + idx + ', this.value)"> 점</div>';
-  }
   if (isHomework){
     html += '<div class="homeworkNote">학부모 리포트에는 다른 6개 영역과 별도로 "숙제 성취율"이 표시됩니다. 완료/없음/학원에서완료는 성공으로, 미완료/미지참은 미완료로 집계됩니다.</div>';
   }
 
   html += '</div>';
   return html;
+}
+
+/* ---------- 다른 요일로 미션 복사 ---------- */
+var copySel = null; // {tue:true, wed:false, ...} — 현재 요일 기준 복사 대상 선택 상태
+
+function normalizeMissionTypes(stu){
+  Object.keys(stu.missions || {}).forEach(function(wd){
+    (stu.missions[wd] || []).forEach(function(m){
+      if (m.type === 'listening' || m.type === 'vocabulary'){ m.type = 'check'; m.scoreMax = 0; }
+    });
+  });
+}
+function renderCopyPanel(){
+  var cur = editState.missions[activeWD] || [];
+  if (!cur.length) return '';
+  if (!copySel){ // 기본값: 아직 비어 있는 요일만 체크 (이미 입력한 요일은 덮어쓰기 방지)
+    copySel = {};
+    WD_KEYS.forEach(function(wd){ if (wd !== activeWD) copySel[wd] = !((editState.missions[wd] || []).length); });
+  }
+  var h = '<div style="margin-top:14px;padding:14px;border-radius:14px;background:var(--primary-soft);">';
+  h += '<div style="font-size:12.5px;font-weight:700;color:var(--primary-ink);margin-bottom:10px;">📋 ' + WD_LABELS[activeWD] + '요일 미션을 다른 요일에도 복사</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">';
+  WD_KEYS.forEach(function(wd){
+    if (wd === activeWD) return;
+    var n = (editState.missions[wd] || []).length;
+    h += '<label style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;">' +
+         '<input type="checkbox" ' + (copySel[wd] ? 'checked' : '') + ' onchange="toggleCopySel(\'' + wd + '\', this.checked)"> ' +
+         WD_LABELS[wd] + (n ? ' <span style="font-weight:400;color:var(--sub);">(기존 ' + n + '개)</span>' : '') + '</label>';
+  });
+  h += '<button type="button" class="btn btn-primary" style="padding:8px 14px;" onclick="copyMissionsToDays()">선택한 요일에 복사</button>';
+  h += '</div><div style="font-size:11.5px;color:var(--sub);margin-top:10px;">체크하지 않은 요일은 직접 설정하세요. 미션만 복사되고 등원/하원 시간은 복사되지 않습니다.</div></div>';
+  return h;
+}
+function toggleCopySel(wd, on){ if (copySel) copySel[wd] = !!on; }
+function copyMissionsToDays(){
+  syncDayInputs();
+  var src = editState.missions[activeWD] || [];
+  if (!src.length){ showToast('복사할 미션이 없어요'); return; }
+  var targets = WD_KEYS.filter(function(wd){ return wd !== activeWD && copySel && copySel[wd]; });
+  if (!targets.length){ showToast('복사할 요일을 선택해 주세요'); return; }
+  var over = targets.filter(function(wd){ return (editState.missions[wd] || []).length; });
+  if (over.length){
+    var names = over.map(function(wd){ return WD_LABELS[wd]; }).join(', ');
+    if (!confirm(names + '요일에 이미 입력된 미션이 있어요.\n덮어쓸까요?')) return;
+  }
+  targets.forEach(function(wd){ editState.missions[wd] = JSON.parse(JSON.stringify(src)); });
+  copySel = null;
+  renderWdStrip(); renderDayBody();
+  showToast(targets.map(function(wd){ return WD_LABELS[wd]; }).join('·') + '요일에 복사됨 — 저장하기를 눌러야 반영돼요');
 }
 
 function addMission(){
@@ -671,10 +715,6 @@ function changeMissionCat(idx, val){
   if (val === 'homework'){
     m.type = 'homework'; m.scoreMax = 0;
     if (!m.text) m.text = '숙제 확인';
-  } else if (val === 'words'){
-    m.type = 'vocabulary'; if (!m.scoreMax) m.scoreMax = 40;
-  } else if (val === 'listening'){
-    m.type = 'listening'; if (!m.scoreMax) m.scoreMax = 40;
   } else {
     m.type = 'check'; m.scoreMax = 0;
   }

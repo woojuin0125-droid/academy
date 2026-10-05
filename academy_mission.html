@@ -576,9 +576,6 @@ function renderMissions(){
         var active = m.status === s.v ? ' active' : '';
         return '<button class="hw-pill' + active + '" data-hw="' + s.v + '">' + s.label + '</button>';
       }).join('') + '</div>';
-    } else if (m.type === 'listening' || m.type === 'vocabulary'){
-      var scoreLabel = done ? (m.score + ' / ' + m.scoreMax + '점 ✓') : ('점수 입력하기 (만점 ' + m.scoreMax + '점)');
-      body = '<button class="stamp-btn" data-action="score">' + scoreLabel + '</button>';
     } else {
       body = '<button class="stamp-btn" data-action="check">' + (done ? '완료! 참 잘했어요 🎉' : '탭해서 완료하기') + '</button>';
     }
@@ -593,10 +590,6 @@ function renderMissions(){
         p.addEventListener('click', function(){
           setHomeworkStatus(idx, p.getAttribute('data-hw'));
         });
-      });
-    } else if (m.type === 'listening' || m.type === 'vocabulary'){
-      card.querySelector('[data-action="score"]').addEventListener('click', function(){
-        openScoreEntry(idx);
       });
     } else {
       card.querySelector('[data-action="check"]').addEventListener('click', function(){
@@ -640,23 +633,6 @@ function setHomeworkStatus(idx, val){
     stampBurst(idx);
   }
   checkAllDone();
-}
-
-function openScoreEntry(idx){
-  var m = state.session.missions[idx];
-  var maxLen = String(m.scoreMax || 100).length;
-  openNumberEntry(m.text, maxLen, '만점 ' + m.scoreMax + '점 중 몇 점?', function(val){
-    var score = parseInt(val, 10);
-    if (isNaN(score)) return;
-    if (score > m.scoreMax) score = m.scoreMax;
-    if (score < 0) score = 0;
-    m.score = score;
-    m.done = true;
-    saveMission(idx, m);
-    renderMissions();
-    stampBurst(idx);
-    checkAllDone();
-  });
 }
 
 /* ---------- 스탬프(완료) 마이크로 애니메이션 ---------- */
