@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>패드 시험 (임시)</title>
+<style>
+  :root{ --bg:#FFF8EC; --card:#fff; --ink:#3A2E26; --sub:#8A7A6C; --line:#F0E4D0; --coral:#FF7A59; --ok:#2FAE76; --warn:#E8A317; --bad:#E8546B; }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Noto Sans KR',system-ui,sans-serif; line-height:1.5;}
+  .wrap{max-width:760px; margin:0 auto; padding:18px 16px 80px;}
+  h1{font-size:20px; margin:0 0 4px;}
+  .note{font-size:13px; color:var(--sub); margin:0 0 14px;}
+  section{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px;}
+  section h2{font-size:15px; margin:0 0 6px;}
+  section p.desc{font-size:12.5px; color:var(--sub); margin:0 0 10px;}
+  button{font:inherit; font-weight:700; font-size:14px; border:none; border-radius:12px; padding:12px 14px; margin:0 6px 8px 0; background:var(--coral); color:#fff; cursor:pointer;}
+  button.sub{background:#F3E9D6; color:var(--ink);}
+  button:disabled{opacity:.4; cursor:not-allowed;}
+  select,input[type=file]{font:inherit; font-size:14px; margin:0 6px 8px 0;}
+  .out{font-size:13px; white-space:pre-wrap; background:#FBF6EC; border-radius:10px; padding:10px 12px; margin-top:4px; min-height:20px; word-break:break-all;}
+  .ok{color:var(--ok); font-weight:700;} .warn{color:var(--warn); font-weight:700;} .bad{color:var(--bad); font-weight:700;}
+  .meter{height:18px; background:#EFE5D2; border-radius:9px; overflow:hidden; margin:6px 0;}
+  .meter > div{height:100%; width:0; background:var(--ok); transition:width .05s linear;}
+  textarea{width:100%; min-height:200px; font-size:12px; border:1px solid var(--line); border-radius:10px; padding:8px;}
+  audio{width:100%; margin:6px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>패드 시험 페이지 (임시)</h1>
+  <p class="note">이 페이지는 학생 정보·DB·서버와 연결되지 않습니다. 시험 데이터는 이 기기 브라우저 안에만 저장되고, 마이크 소리는 저장·전송되지 않습니다(음량 숫자만 계산). 시험이 끝나면 "시험 데이터 모두 지우기"를 눌러 주세요.</p>
+
+  <!-- 0. 환경 -->
+  <section>
+    <h2>0. 기기·브라우저 정보</h2>
+    <button id="btnEnv">정보 확인</button>
+    <div class="out" id="outEnv">-</div>
+  </section>
+
+  <!-- 1. 저장 -->
+  <section>
+    <h2>1. 음원 보관 시험 (기기 안 저장소)</h2>
+    <p class="desc">① 시험 음원을 만들고 → ② 저장 → ③ 창을 완전히 닫았다 다시 열어 "저장된 항목 확인" → ④ 불러와서 재생. 실제 mp3로도 시험할 수 있습니다.</p>
+    <select id="selLen"><option value="60">시험 음원 1분 (약 3MB)</option><option value="300">시험 음원 5분 (약 14MB)</option></select>
+    <button id="btnGen">시험 음원 만들기</button>
+    <button id="btnSave" disabled>기기에 저장</button>
+    <button id="btnLoad" class="sub">저장된 것 불러오기</button><br>
+    <input type="file" id="fileMp3" accept="audio/*"> <button id="btnSaveFile" class="sub" disabled>선택한 파일 저장</button><br>
+    <button id="btnPersist" class="sub">저장소 삭제 방지 요청</button>
+    <button id="btnList" class="sub">저장된 항목 확인</button>
+    <button id="btnClear" class="sub">시험 데이터 모두 지우기</button>
+    <audio id="player" controls></audio>
+    <div class="out" id="outStore">-</div>
+  </section>
+
+  <!-- 2. 문장 구간 재생 정밀도 -->
+  <section>
+    <h2>2. 문장 구간 재생 시험</h2>
+    <p class="desc">"한 문장 듣고 멈춤"이 얼마나 정확한지 잽니다. 시험 음원(위에서 만들거나 불러온 것)으로 앞 8개 구간을 차례로 재생합니다. 소리는 약 3초 신호음입니다.</p>
+    <button id="btnSeg" disabled>구간 재생 시험 (약 40초)</button>
+    <div class="out" id="outSeg">-</div>
+  </section>
+
+  <!-- 3. 마이크 -->
+  <section>
+    <h2>3. 마이크 소리 감지 시험</h2>
+    <p class="desc">① 시작 후 2초 동안 조용히 → ② 8초 동안 영어 문장을 소리 내어 읽어 주세요. 소리가 감지된 시간을 잽니다. 녹음은 하지 않습니다.</p>
+    <button id="btnMic">마이크 시험 시작</button>
+    <div class="meter"><div id="meterBar"></div></div>
+    <div class="out" id="outMic">-</div>
+    <p class="desc" style="margin-top:10px;">③ 스피커 간섭 시험: 신호음을 한 번 재생한 직후 1.5초 동안 <b>아무 말도 하지 않고</b> 마이크가 스피커 소리를 얼마나 잡는지 봅니다. 패드 음량은 평소 수업에서 쓰는 크기로 맞춰 주세요.</p>
+    <button id="btnLeak" disabled>스피커 간섭 시험</button>
+    <div class="out" id="outLeak">-</div>
+  </section>
+
+  <!-- 4. 화면 꺼짐 -->
+  <section>
+    <h2>4. 화면 꺼짐·백그라운드 재생 시험</h2>
+    <p class="desc">① "재생 시작"을 누르고 → ② 전원 버튼으로 화면을 끄고 30초 기다린 뒤 → ③ 화면을 다시 켜면 결과가 표시됩니다. 5분짜리 음원을 권장합니다.</p>
+    <button id="btnBg" disabled>재생 시작</button>
+    <button id="btnWake" class="sub">화면 켜짐 유지 요청</button>
+    <div class="out" id="outBg">-</div>
+  </section>
+
+  <!-- 결과 -->
+  <section>
+    <h2>시험 결과 모아보기</h2>
+    <p class="desc">모든 시험을 마친 뒤 "결과 만들기"를 누르고 내용을 복사해서 보내 주세요. 패드마다 한 번씩 시험하고, 어느 패드인지 이름을 적어 주세요.</p>
+    <input id="padName" placeholder="패드 이름 (예: 패드1)" style="font:inherit; padding:8px; border:1px solid var(--line); border-radius:8px; margin-bottom:8px;"><br>
+    <button id="btnReport">결과 만들기</button>
+    <button id="btnCopy" class="sub">복사</button>
+    <textarea id="report" readonly></textarea>
+  </section>
+</div>
+
+<script>
+/* 시험 결과는 모두 이 객체에만 쌓입니다 (서버 전송 없음) */
+var R = { env:null, storage:null, persist:null, seg:null, mic:null, leak:null, bg:null, wake:null };
+var $ = function(id){ return document.getElementById(id); };
+function set(id, html){ $(id).innerHTML = html; }
+function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function fmtMB(b){ return (b/1048576).toFixed(1) + 'MB'; }
+function cls(ok, text){ return '<span class="' + (ok===true?'ok':ok===false?'bad':'warn') + '">' + esc(text) + '</span>'; }
+
+/* ---------- IndexedDB ---------- */
+function idb(){
+  return new Promise(function(res, rej){
+    var r = indexedDB.open('padtest', 1);
+    r.onupgradeneeded = function(){ r.result.createObjectStore('audio', { keyPath:'key' }); };
+    r.onsuccess = function(){ res(r.result); };
+    r.onerror = function(){ rej(r.error); };
+  });
+}
+function idbPut(rec){
+  return idb().then(function(db){ return new Promise(function(res, rej){
+    var tx = db.transaction('audio', 'readwrite'); tx.objectStore('audio').put(rec);
+    tx.oncomplete = function(){ res(); }; tx.onerror = function(){ rej(tx.error); };
+  }); });
+}
+function idbAll(){
+  return idb().then(function(db){ return new Promise(function(res, rej){
+    var q = db.transaction('audio').objectStore('audio').getAll();
+    q.onsuccess = function(){ res(q.result); }; q.onerror = function(){ rej(q.error); };
+  }); });
+}
+function idbClear(){
+  return idb().then(function(db){ return new Promise(function(res, rej){
+    var tx = db.transaction('audio', 'readwrite'); tx.objectStore('audio').clear();
+    tx.oncomplete = function(){ res(); }; tx.onerror = function(){ rej(tx.error); };
+  }); });
+}
+
+/* ---------- 0. 환경 ---------- */
+$('btnEnv').onclick = function(){
+  var e = {
+    ua: navigator.userAgent,
+    screen: screen.width + 'x' + screen.height + ' @' + devicePixelRatio,
+    secure: window.isSecureContext,
+    indexedDB: !!window.indexedDB,
+    cacheAPI: !!window.caches,
+    mic: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+    audioContext: !!(window.AudioContext || window.webkitAudioContext),
+    wakeLock: !!(navigator.wakeLock),
+    online: navigator.onLine
+  };
+  var done = function(){
+    R.env = e;
+    set('outEnv',
+      '브라우저: ' + esc(e.ua) + '\n화면: ' + e.screen +
+      '\nHTTPS 보안 환경: ' + cls(e.secure, e.secure ? '예' : '아니오 (마이크 사용 불가)') +
+      '\n기기 저장소(IndexedDB): ' + cls(e.indexedDB, e.indexedDB ? '지원' : '미지원') +
+      '\nCache API: ' + cls(e.cacheAPI, e.cacheAPI ? '지원' : '미지원') +
+      '\n마이크 API: ' + cls(e.mic, e.mic ? '지원' : '미지원') +
+      '\n화면 켜짐 유지 API: ' + cls(e.wakeLock, e.wakeLock ? '지원' : '미지원') +
+      (e.storageQuota ? '\n저장 가능 용량(브라우저 허용치): ' + fmtMB(e.storageQuota) + ' / 사용 중 ' + fmtMB(e.storageUsage) : '') +
+      (e.persisted !== undefined ? '\n삭제 방지 상태: ' + (e.persisted ? '보호됨' : '보호 안 됨') : ''));
+  };
+  if (navigator.storage && navigator.storage.estimate){
+    navigator.storage.estimate().then(function(s){
+      e.storageQuota = s.quota; e.storageUsage = s.usage;
+      return navigator.storage.persisted ? navigator.storage.persisted() : undefined;
+    }).then(function(p){ e.persisted = p; done(); }).catch(done);
+  } else done();
+};
+
+/* ---------- 1. 시험 음원 만들기 / 저장 / 불러오기 ---------- */
+var made = null;   // { blob, segs:[[a,b]...], durationSec, kind }
+var loaded = null; // { blob, segs, url, key }
+var player = $('player');
+
+/* 약 3초 신호음(말소리처럼 4Hz로 세기가 변함) + 2초 무음을 반복. 구간 시각은 정확히 알려져 있음 */
+function makeToneWav(totalSec){
+  var sr = 24000, n = Math.floor(sr * totalSec);
+  var pcm = new Int16Array(n);
+  var segs = [], t = 1.0;
+  var lens = [2.6, 3.2, 3.0, 2.8, 3.4, 3.0, 2.7, 3.1];
+  var i = 0;
+  while (t + 3.5 < totalSec){
+    var len = lens[i % lens.length], a = t, b = t + len;
+    segs.push([a, b]);
+    for (var k = Math.floor(a*sr); k < Math.floor(b*sr) && k < n; k++){
+      var tt = k / sr;
+      var env = 0.55 + 0.45 * Math.sin(2*Math.PI*4*tt);
+      pcm[k] = Math.round(8000 * env * (Math.sin(2*Math.PI*220*tt) + 0.5*Math.sin(2*Math.PI*440*tt)));
+    }
+    t = b + 2.0; i++;
+  }
+  var buf = new ArrayBuffer(44 + n*2), v = new DataView(buf);
+  function str(o, s){ for (var q=0;q<s.length;q++) v.setUint8(o+q, s.charCodeAt(q)); }
+  str(0,'RIFF'); v.setUint32(4, 36+n*2, true); str(8,'WAVE'); str(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  str(36,'data'); v.setUint32(40, n*2, true);
+  new Int16Array(buf, 44).set(pcm);
+  return { blob: new Blob([buf], { type:'audio/wav' }), segs: segs, durationSec: totalSec, kind:'tone' };
+}
+
+$('btnGen').onclick = function(){
+  var sec = parseInt($('selLen').value, 10);
+  var t0 = performance.now();
+  made = makeToneWav(sec);
+  set('outStore', '시험 음원 생성 완료: ' + fmtMB(made.blob.size) + ', 구간 ' + made.segs.length + '개 (' + Math.round(performance.now()-t0) + 'ms)\n이제 "기기에 저장"을 누르세요.');
+  $('btnSave').disabled = false;
+};
+
+$('btnSave').onclick = function(){
+  if (!made) return;
+  var t0 = performance.now();
+  var rec = { key:'tone', blob:made.blob, segs:made.segs, durationSec:made.durationSec, savedAt:Date.now(), kind:'tone' };
+  var out = [];
+  idbPut(rec).then(function(){
+    out.push('IndexedDB 저장: ' + cls(true,'성공') + ' (' + Math.round(performance.now()-t0) + 'ms)');
+    R.storage = R.storage || {}; R.storage.idbSave = true; R.storage.sizeMB = +(made.blob.size/1048576).toFixed(1);
+  }).catch(function(err){
+    out.push('IndexedDB 저장: ' + cls(false,'실패 ' + err));
+    R.storage = R.storage || {}; R.storage.idbSave = false;
+  }).then(function(){
+    if (!window.caches){ out.push('Cache API: 미지원'); return; }
+    var t1 = performance.now();
+    return caches.open('padtest').then(function(c){
+      return c.put('/padtest/tone', new Response(made.blob, { headers:{ 'Content-Type':'audio/wav' } }));
+    }).then(function(){
+      out.push('Cache API 저장: ' + cls(true,'성공') + ' (' + Math.round(performance.now()-t1) + 'ms)');
+      R.storage.cacheSave = true;
+    }).catch(function(err){ out.push('Cache API 저장: ' + cls(false,'실패 ' + err)); R.storage.cacheSave = false; });
+  }).then(function(){ set('outStore', out.join('\n')); });
+};
+
+function loadStored(key){
+  var t0 = performance.now();
+  return idbAll().then(function(all){
+    var rec = all.filter(function(r){ return r.key === key; })[0];
+    if (!rec) return null;
+    var ms = Math.round(performance.now() - t0);
+    if (loaded && loaded.url) URL.revokeObjectURL(loaded.url);
+    loaded = { blob: rec.blob, segs: rec.segs || null, key: key, url: URL.createObjectURL(rec.blob), readMs: ms, durationSec: rec.durationSec };
+    player.src = loaded.url;
+    return loaded;
+  });
+}
+$('btnLoad').onclick = function(){
+  loadStored('tone').then(function(l){
+    if (!l){ loadStored('file').then(function(f){
+      if (!f){ set('outStore', cls(false,'저장된 항목이 없습니다.')); return; }
+      afterLoad(f);
+    }); return; }
+    afterLoad(l);
+  }).catch(function(err){ set('outStore', cls(false,'불러오기 실패 ' + err)); });
+};
+function afterLoad(l){
+  R.storage = R.storage || {}; R.storage.readMs = l.readMs; R.storage.loaded = true;
+  set('outStore', '불러오기 ' + cls(true,'성공') + ' — ' + fmtMB(l.blob.size) + ', 읽기 ' + l.readMs + 'ms\n▶ 위 재생 막대로 재생하고 중간을 눌러 이동(탐색)이 잘 되는지 확인하세요.');
+  var hasSegs = !!(l.segs && l.segs.length);
+  $('btnSeg').disabled = !hasSegs;
+  $('btnLeak').disabled = !hasSegs;
+  $('btnBg').disabled = false;
+}
+
+$('fileMp3').onchange = function(){ $('btnSaveFile').disabled = !$('fileMp3').files.length; };
+$('btnSaveFile').onclick = function(){
+  var f = $('fileMp3').files[0]; if (!f) return;
+  idbPut({ key:'file', blob:f, segs:null, name:f.name, savedAt:Date.now(), kind:'file' }).then(function(){
+    set('outStore', '파일 저장 ' + cls(true,'성공') + ': ' + esc(f.name) + ' (' + fmtMB(f.size) + ')\n"저장된 것 불러오기"로 재생해 보세요(구간·간섭 시험은 시험 음원에서만 가능).');
+  }).catch(function(err){ set('outStore', cls(false,'저장 실패 ' + err)); });
+};
+
+$('btnPersist').onclick = function(){
+  if (!(navigator.storage && navigator.storage.persist)){ set('outStore', cls(null,'이 브라우저는 삭제 방지 요청을 지원하지 않습니다.')); return; }
+  navigator.storage.persist().then(function(ok){
+    R.persist = ok;
+    set('outStore', '삭제 방지 요청 결과: ' + (ok ? cls(true,'보호됨') : cls(null,'승인되지 않음 (브라우저 판단. 자주 쓰는 사이트일수록 승인됩니다)')));
+  });
+};
+
+$('btnList').onclick = function(){
+  idbAll().then(function(all){
+    if (!all.length){ set('outStore', '저장된 항목 없음'); return; }
+    set('outStore', '저장된 항목 ' + all.length + '개 (창을 닫았다 다시 열어도 남아 있으면 성공)\n' +
+      all.map(function(r){ return '- ' + esc(r.key) + ' ' + fmtMB(r.blob.size) + ' · ' + new Date(r.savedAt).toLocaleString(); }).join('\n'));
+  }).catch(function(err){ set('outStore', cls(false,'확인 실패 ' + err)); });
+};
+$('btnClear').onclick = function(){
+  idbClear().then(function(){ return window.caches ? caches.delete('padtest') : null; }).then(function(){
+    if (loaded && loaded.url) URL.revokeObjectURL(loaded.url);
+    loaded = null; made = null; player.removeAttribute('src'); player.load();
+    $('btnSeg').disabled = true; $('btnLeak').disabled = true; $('btnBg').disabled = true; $('btnSave').disabled = true;
+    set('outStore', '시험 데이터를 모두 지웠습니다.');
+  });
+};
+
+/* ---------- 2. 구간 재생 정밀도 ---------- */
+function playSegment(a, b){
+  return new Promise(function(res){
+    player.loop = false;
+    var seekT0 = performance.now();
+    function begin(){
+      var seekMs = performance.now() - seekT0;
+      var playT0 = performance.now();
+      player.play().then(function(){
+        var startedMs = performance.now() - playT0;
+        var iv = setInterval(function(){
+          if (player.currentTime >= b){
+            clearInterval(iv); player.pause();
+            res({ seekMs: seekMs, startMs: startedMs, overshootMs: (player.currentTime - b) * 1000 });
+          }
+        }, 20);
+      }).catch(function(err){ res({ error: String(err) }); });
+    }
+    player.onseeked = function(){ player.onseeked = null; begin(); };
+    player.currentTime = a;
+  });
+}
+$('btnSeg').onclick = function(){
+  if (!loaded || !loaded.segs) return;
+  $('btnSeg').disabled = true;
+  var segs = loaded.segs.slice(0, 8), results = [];
+  set('outSeg', '시험 중… (소리가 8번 납니다)');
+  segs.reduce(function(p, s){
+    return p.then(function(){ return playSegment(s[0], s[1]); }).then(function(r){ results.push(r); });
+  }, Promise.resolve()).then(function(){
+    $('btnSeg').disabled = false;
+    var okR = results.filter(function(r){ return !r.error; });
+    if (!okR.length){ set('outSeg', cls(false,'재생 실패: ' + (results[0] && results[0].error))); return; }
+    function avg(k){ return okR.reduce(function(a,r){ return a+r[k]; }, 0) / okR.length; }
+    function max(k){ return Math.max.apply(null, okR.map(function(r){ return r[k]; })); }
+    R.seg = { n: okR.length, overshootAvgMs: Math.round(avg('overshootMs')), overshootMaxMs: Math.round(max('overshootMs')),
+              seekAvgMs: Math.round(avg('seekMs')), seekMaxMs: Math.round(max('seekMs')),
+              startAvgMs: Math.round(avg('startMs')), startMaxMs: Math.round(max('startMs')) };
+    var good = R.seg.overshootMaxMs <= 150;
+    set('outSeg', '구간 ' + R.seg.n + '개 시험 완료\n' +
+      '끝점을 넘어 더 재생된 시간: 평균 ' + R.seg.overshootAvgMs + 'ms / 최대 ' + R.seg.overshootMaxMs + 'ms ' +
+      cls(good, good ? '(양호)' : '(문장 끝이 조금 잘리거나 다음 문장이 섞여 들릴 수 있음)') + '\n' +
+      '위치 이동에 걸린 시간: 평균 ' + R.seg.seekAvgMs + 'ms / 최대 ' + R.seg.seekMaxMs + 'ms\n' +
+      '재생 시작까지: 평균 ' + R.seg.startAvgMs + 'ms / 최대 ' + R.seg.startMaxMs + 'ms');
+  });
+};
+
+/* ---------- 3. 마이크 ---------- */
+var AC = window.AudioContext || window.webkitAudioContext;
+function rmsDb(an, buf){
+  an.getFloatTimeDomainData(buf);
+  var s = 0; for (var i=0;i<buf.length;i++) s += buf[i]*buf[i];
+  var rms = Math.sqrt(s / buf.length);
+  return 20 * Math.log10(Math.max(rms, 1e-8));
+}
+function median(a){ var b = a.slice().sort(function(x,y){return x-y;}); return b.length ? b[Math.floor(b.length/2)] : -100; }
+function openMic(){
+  return navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:true, noiseSuppression:true, autoGainControl:true } }).then(function(stream){
+    var ctx = new AC(); var src = ctx.createMediaStreamSource(stream);
+    var an = ctx.createAnalyser(); an.fftSize = 1024; src.connect(an);
+    return { stream: stream, ctx: ctx, an: an, buf: new Float32Array(an.fftSize),
+             close: function(){ stream.getTracks().forEach(function(t){ t.stop(); }); ctx.close(); } };
+  });
+}
+function sample(m, ms, onTick){
+  return new Promise(function(res){
+    var vals = [], t0 = performance.now();
+    var iv = setInterval(function(){
+      var db = rmsDb(m.an, m.buf); vals.push(db);
+      if (onTick) onTick(db);
+      if (performance.now() - t0 >= ms){ clearInterval(iv); res(vals); }
+    }, 50);
+  });
+}
+function meter(db){ $('meterBar').style.width = Math.max(0, Math.min(100, (db + 70) / 70 * 100)) + '%'; }
+
+$('btnMic').onclick = function(){
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ set('outMic', cls(false,'이 환경에서는 마이크를 쓸 수 없습니다 (HTTPS 주소로 열었는지 확인).')); return; }
+  $('btnMic').disabled = true;
+  set('outMic', '마이크 허용 창이 뜨면 "허용"을 눌러 주세요…');
+  var m;
+  openMic().then(function(mm){
+    m = mm;
+    set('outMic', '① 2초 동안 조용히 해 주세요…');
+    return sample(m, 2000, meter);
+  }).then(function(quiet){
+    var floor = median(quiet);
+    set('outMic', '② 지금부터 8초 동안 영어 문장을 소리 내어 읽어 주세요!');
+    return sample(m, 8000, meter).then(function(talk){
+      var thr = Math.max(floor + 12, -50), voiced = 0, peak = -100;
+      talk.forEach(function(d){ if (d > thr) voiced++; if (d > peak) peak = d; });
+      R.mic = { noiseFloorDb: Math.round(floor), thresholdDb: Math.round(thr), peakDb: Math.round(peak), voicedSec: +(voiced*0.05).toFixed(1) };
+      var good = R.mic.voicedSec >= 2;
+      set('outMic', '주변 소음 ' + R.mic.noiseFloorDb + 'dB / 감지 기준 ' + R.mic.thresholdDb + 'dB / 가장 큰 소리 ' + R.mic.peakDb + 'dB\n' +
+        '소리가 감지된 시간: ' + R.mic.voicedSec + '초 ' + cls(good, good ? '(양호)' : '(너무 적음 — 목소리를 더 크게, 마이크 가까이에서 다시 시험)'));
+    });
+  }).catch(function(err){
+    R.mic = { error: String(err && err.name || err) };
+    set('outMic', cls(false, '마이크 시험 실패: ' + (err && err.name || err) + (err && err.name === 'NotAllowedError' ? ' (허용하지 않으셨거나 브라우저에서 차단됨)' : '')));
+  }).then(function(){
+    if (m) m.close(); meter(-100); $('btnMic').disabled = false;
+  });
+};
+
+$('btnLeak').onclick = function(){
+  if (!loaded || !loaded.segs) return;
+  $('btnLeak').disabled = true;
+  set('outLeak', '마이크 허용 후, 신호음이 나온 뒤 1.5초 동안 말하지 마세요…');
+  var m, floor;
+  openMic().then(function(mm){
+    m = mm;
+    return sample(m, 1500, meter);
+  }).then(function(quiet){
+    floor = median(quiet);
+    var seg = loaded.segs[0];
+    return playSegment(seg[0], seg[1]);
+  }).then(function(){
+    return sample(m, 1500, meter);
+  }).then(function(after){
+    var thr = Math.max(floor + 12, -50), n = 0, peak = -100;
+    after.forEach(function(d){ if (d > thr) n++; if (d > peak) peak = d; });
+    R.leak = { noiseFloorDb: Math.round(floor), afterPeakDb: Math.round(peak), leakedSec: +(n*0.05).toFixed(2) };
+    var good = R.leak.leakedSec < 0.3;
+    set('outLeak', '재생이 끝난 뒤 스피커 소리가 마이크에 잡힌 시간: ' + R.leak.leakedSec + '초 (최대 ' + R.leak.afterPeakDb + 'dB, 소음 ' + R.leak.noiseFloorDb + 'dB)\n' +
+      cls(good, good ? '양호: 재생 직후에도 거의 간섭이 없습니다.' : '간섭 있음: 재생이 끝난 뒤 잠깐 기다렸다가 소리를 재도록 설계에 반영해야 합니다.'));
+  }).catch(function(err){
+    R.leak = { error: String(err && err.name || err) };
+    set('outLeak', cls(false, '시험 실패: ' + (err && err.name || err)));
+  }).then(function(){
+    if (m) m.close(); meter(-100); $('btnLeak').disabled = false;
+  });
+};
+
+/* ---------- 4. 화면 꺼짐 ---------- */
+var bg = null; // { hiddenAt, posAtHide, n }
+var bgCount = 0;
+$('btnBg').onclick = function(){
+  if (!loaded) return;
+  player.loop = true; player.currentTime = 0;
+  player.play().then(function(){
+    bg = { started: Date.now(), events: [] };
+    set('outBg', '재생 중입니다. 이제 전원 버튼으로 화면을 끄고 30초 뒤에 다시 켜 주세요.');
+  }).catch(function(err){ set('outBg', cls(false,'재생 실패 ' + err)); });
+};
+document.addEventListener('visibilitychange', function(){
+  if (!bg) return;
+  var now = Date.now();
+  if (document.visibilityState === 'hidden'){
+    bg.hiddenAt = now; bg.posAtHide = player.currentTime; bg.pausedAtHide = player.paused;
+  } else if (bg.hiddenAt){
+    var hiddenSec = (now - bg.hiddenAt) / 1000;
+    var dur = player.duration || 1;
+    var adv = player.currentTime - bg.posAtHide; if (adv < 0) adv += dur; // 반복 재생으로 처음으로 돌아간 경우
+    var kept = !player.paused && adv > hiddenSec * 0.8;
+    R.bg = { hiddenSec: +hiddenSec.toFixed(1), advancedSec: +adv.toFixed(1), stillPlaying: !player.paused, continuedWhileHidden: kept };
+    bg.hiddenAt = null;
+    set('outBg', '화면이 꺼져 있던 시간 ' + R.bg.hiddenSec + '초 동안 재생이 ' + R.bg.advancedSec + '초 진행됨\n' +
+      '결과: ' + (kept ? cls(true,'화면이 꺼져도 재생이 계속됨') : cls(null,'화면이 꺼지면 재생이 멈춤/지연됨 — 수업 중 화면 꺼짐 방지(켜짐 유지)가 필요합니다')) +
+      '\n현재 재생 상태: ' + (player.paused ? '멈춤' : '재생 중') + ' (끝내려면 위 재생 막대의 정지 버튼)');
+  }
+});
+var wakeSentinel = null;
+$('btnWake').onclick = function(){
+  if (!navigator.wakeLock){ R.wake = { supported:false }; set('outBg', cls(null,'이 브라우저는 화면 켜짐 유지를 지원하지 않습니다.')); return; }
+  navigator.wakeLock.request('screen').then(function(s){
+    wakeSentinel = s; R.wake = { supported:true, granted:true };
+    set('outBg', '화면 켜짐 유지 ' + cls(true,'승인됨') + ' — 이 페이지가 보이는 동안 화면이 꺼지지 않아야 합니다. 설정한 화면 자동 꺼짐 시간(예: 1분)보다 오래 기다려서 확인해 보세요.');
+  }).catch(function(err){ R.wake = { supported:true, granted:false, error:String(err.name||err) }; set('outBg', cls(false,'승인되지 않음: ' + (err.name||err))); });
+};
+
+/* ---------- 결과 ---------- */
+$('btnReport').onclick = function(){
+  var rep = { pad: $('padName').value || '(이름 없음)', time: new Date().toLocaleString(), result: R };
+  $('report').value = JSON.stringify(rep, null, 1);
+};
+$('btnCopy').onclick = function(){
+  var ta = $('report'); ta.select();
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).catch(function(){ document.execCommand('copy'); });
+  else document.execCommand('copy');
+};
+
+/* 페이지를 열 때 이미 저장된 항목이 있으면 알려 줌 (재시작 후 보존 확인용) */
+idbAll().then(function(all){
+  if (all.length){
+    R.storage = R.storage || {}; R.storage.remainedAfterReopen = true; // 페이지를 새로 열었는데도 남아 있음
+    set('outStore', '이전에 저장한 시험 항목이 ' + all.length + '개 남아 있습니다 (닫았다 다시 열어도 보존됨). "저장된 것 불러오기"를 눌러 보세요.');
+  }
+}).catch(function(){});
+</script>
+</body>
+</html>
