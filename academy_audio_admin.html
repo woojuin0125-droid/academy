@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎧 음원·책 등록 관리자</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8EC; --card:#FFFFFF; --ink:#2B2420; --sub:#8A7A66; --line:#EDE2D0;
+    --coral:#FF7A59; --coral-deep:#E85F3E;
+    --ok:#2E9E63; --warn:#C98500; --bad:#D62839; --info:#3D7BC1;
+    --c-pink:#FF6FA0; --c-red:#D62839;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .mono{font-family:'Space Grotesk',monospace;}
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 20px 90px;}
+  h1{font-size:23px;margin:0 0 4px;}
+  .lead{margin:0 0 20px;color:var(--sub);font-size:13px;}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px;}
+  section h2{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:8px;}
+  section .desc{font-size:12.5px;color:var(--sub);margin:0 0 12px;line-height:1.55;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  label.f{font-size:12px;color:var(--sub);display:block;margin-bottom:3px;}
+  input[type=text],input[type=password],select{
+    font:inherit;font-size:14px;padding:9px 11px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink);
+  }
+  input[type=text]:focus,input[type=password]:focus,select:focus{outline:none;border-color:var(--coral);}
+  button{font:inherit;font-size:14px;font-weight:700;border:0;border-radius:10px;padding:10px 16px;cursor:pointer;background:var(--ink);color:var(--cream);}
+  button.pri{background:var(--coral);color:#fff;}
+  button.pri:hover{background:var(--coral-deep);}
+  button.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+  .chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:#F3EBDD;color:var(--sub);}
+  .chip.ok{background:#DDF3E6;color:var(--ok);} .chip.bad{background:#FADDE0;color:var(--bad);}
+  .chip.warn{background:#FFF0CC;color:var(--warn);} .chip.info{background:#DCE9F7;color:var(--info);}
+  .msg{font-size:13px;margin-top:8px;min-height:18px;}
+  .msg.bad{color:var(--bad);} .msg.ok{color:var(--ok);}
+  .locked{opacity:.45;pointer-events:none;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px;}
+  .filters button{padding:5px 11px;font-size:12px;background:#fff;color:var(--ink);border:2px solid var(--line);}
+  .filters button.on{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+  .tbl{width:100%;border-collapse:collapse;font-size:13px;}
+  .tbl th{text-align:left;font-size:11.5px;color:var(--sub);font-weight:500;padding:6px 8px;border-bottom:2px solid var(--line);position:sticky;top:0;background:#fff;}
+  .tbl td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  .tbl tr.err td{background:#FFF1F2;} .tbl tr.warn td{background:#FFFBEA;} .tbl tr.done td{background:#F0FAF4;}
+  .tbl input[type=text]{width:100%;padding:5px 8px;font-size:13px;}
+  .tbl .fn{max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sub);font-size:12px;}
+  .scroll{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:10px;}
+  .lv{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;}
+  .lv.Pink{background:var(--c-pink);} .lv.Red{background:var(--c-red);}
+  .bar{height:10px;background:#F3EBDD;border-radius:99px;overflow:hidden;margin:10px 0 4px;}
+  .bar>i{display:block;height:100%;width:0;background:var(--coral);transition:width .2s;}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}
+  .stat{background:#FBF5E9;border-radius:12px;padding:10px 14px;}
+  .stat b{font-size:22px;font-family:'Space Grotesk';display:block;} .stat span{font-size:12px;color:var(--sub);}
+  ul.plain{margin:6px 0 0;padding-left:18px;font-size:12.5px;line-height:1.7;}
+  .note{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.6;}
+  .mini{font-size:11.5px;color:var(--sub);}
+  .flag{font-size:11.5px;color:var(--warn);display:block;}
+  .flag.bad{color:var(--bad);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎧 음원·책 등록 관리자</h1>
+  <p class="lead">ORT 음원을 올리면 같은 번호·같은 제목으로 책 목록에 등록됩니다. 확인 표에서 제목을 고친 뒤 [등록 시작]을 누르기 전에는 아무것도 올라가거나 바뀌지 않습니다.</p>
+
+  <!-- 1. 연결 -->
+  <section id="secConn">
+    <h2>1. 연결 <span id="connChip" class="chip">연결 전</span></h2>
+    <p class="desc">Worker 주소와 관리자 비밀번호를 입력하세요. 관리자 비밀번호는 출석 PIN과 다른 별도 비밀번호입니다. 이 화면을 닫으면 로그인은 해제됩니다.</p>
+    <div class="row">
+      <div style="flex:1;min-width:280px;"><label class="f">Worker 주소 (예: https://refy-learning.○○○.workers.dev)</label>
+        <input type="text" id="baseUrl" style="width:100%;" placeholder="https://..." autocomplete="off"></div>
+      <div><label class="f">&nbsp;</label><button class="ghost" id="btnHealth">연결 확인</button></div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div><label class="f">관리자 비밀번호</label><input type="password" id="adminPw" autocomplete="off" style="width:260px;"></div>
+      <div><label class="f">&nbsp;</label><button class="pri" id="btnLogin">로그인</button></div>
+    </div>
+    <div id="connMsg" class="msg"></div>
+  </section>
+
+  <!-- 2. ORT 일괄 등록 -->
+  <section id="secOrt" class="locked">
+    <h2>2. ORT 일괄 등록</h2>
+    <p class="desc">파일 이름이 <b class="mono">1-1_At_School.mp3</b> 형태인 음원을 고르면 번호(<span class="mono">0101</span>)·Stage·제목·색 레벨을 자동으로 정해 표로 보여 줍니다. 제목은 파일 이름 그대로 가져오며 자동으로 고치지 않습니다. 표에서 직접 수정하세요.</p>
+    <div class="row">
+      <button class="ghost" id="btnPickFiles">파일 여러 개 선택</button>
+      <button class="ghost" id="btnPickDir">폴더 선택</button>
+      <input type="file" id="inFiles" accept=".mp3,audio/mpeg" multiple hidden>
+      <input type="file" id="inDir" webkitdirectory multiple hidden>
+      <span id="ortSummary" class="mini"></span>
+    </div>
+    <div id="ortBody" style="display:none;">
+      <div class="grid2" id="ortStats" style="margin-top:12px;"></div>
+      <div class="filters" id="ortFilters"></div>
+      <div class="scroll"><table class="tbl" id="ortTable"><thead><tr>
+        <th style="width:34px;"><input type="checkbox" id="chkAll" title="전체 선택/해제"></th>
+        <th>파일</th><th>번호</th><th>Stage</th><th style="min-width:240px;">제목 (수정 가능)</th><th>레벨</th><th>상태</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="pri" id="btnStart">등록 시작</button>
+        <button class="ghost" id="btnRetry" style="display:none;">실패한 항목만 다시 시도</button>
+        <span id="runMsg" class="mini"></span>
+      </div>
+      <div class="bar" id="runBarWrap" style="display:none;"><i id="runBar"></i></div>
+      <div class="note">기존 번호의 제목은 절대 덮어쓰지 않습니다. 다른 책이 이미 쓰고 있는 번호는 "번호 충돌"로 막습니다.</div>
+    </div>
+  </section>
+
+  <!-- 3. 표지 -->
+  <section id="secCover" class="locked">
+    <h2>3. 표지 올리기 (선택)</h2>
+    <p class="desc">파일 이름을 <b class="mono">0101.jpg</b>처럼 책 번호로 만들어 올립니다. 가로 600px 안팎으로 자동 축소되어 올라갑니다. 책 목록에 먼저 등록된 번호만 올릴 수 있습니다. 표지가 없는 책은 학생 화면에서 색 카드로 보입니다.</p>
+    <div class="row">
+      <button class="ghost" id="btnPickCover">표지 파일 선택</button>
+      <input type="file" id="inCover" accept="image/*" multiple hidden>
+      <button class="pri" id="btnCoverGo" disabled>표지 올리기</button>
+    </div>
+    <div id="coverList" class="note"></div>
+  </section>
+
+  <!-- 4. 기존 원서 -->
+  <section id="secBook" class="locked">
+    <h2>4. 기존 원서 음원 올리기 (번호 지정)</h2>
+    <p class="desc">이미 책 목록에 있는 원서(예: 1001~)에 음원을 붙입니다. 번호를 넣고 조회한 뒤 MP3 파일을 고르세요.</p>
+    <div class="row">
+      <div><label class="f">책 번호 4자리</label><input type="text" id="bkNo" maxlength="4" inputmode="numeric" class="mono" style="width:110px;"></div>
+      <div><label class="f">&nbsp;</label><button class="ghost" id="btnBkFind">조회</button></div>
+      <div id="bkInfo" style="font-size:14px;font-weight:700;"></div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button class="ghost" id="btnBkPick" disabled>MP3 파일 선택</button>
+      <input type="file" id="inBk" accept=".mp3,audio/mpeg" hidden>
+      <button class="pri" id="btnBkGo" disabled>올리기</button>
+      <span id="bkFile" class="mini"></span>
+    </div>
+    <div id="bkMsg" class="msg"></div>
+  </section>
+
+  <!-- 5. 현황·백업 -->
+  <section id="secStat" class="locked">
+    <h2>5. 보관 현황 · 백업</h2>
+    <p class="desc">클라우드 저장소와 책 목록이 서로 맞는지 점검하고, 책 목록·문장 구간을 파일로 내려받아 백업합니다. 월 1회 내려받아 보관하길 권장합니다. 원본 음원 폴더도 다른 곳에 한 벌 더 보관하세요.</p>
+    <div class="row">
+      <button class="ghost" id="btnStat">현황 점검</button>
+      <button class="ghost" id="btnExport">책 목록·구간 백업 내려받기</button>
+    </div>
+    <div id="statOut" style="margin-top:12px;"></div>
+  </section>
+</div>
+
+<script>
+/* ============================================================
+   설정
+============================================================ */
+var FIREBASE = 'https://hakwoncheck-default-rtdb.firebaseio.com';   // 읽기 전용으로만 사용 (쓰기는 모두 Worker 경유)
+var LS_BASE = 'refy_worker_base';
+var MIN_BYTES = 10 * 1024, MAX_BYTES = 60 * 1024 * 1024;
+var KNOWN_SUSPECT = ['isee','goeilla','yhe','moutain','the what sit','under grand adventure','hey!presto'];
+var LEVEL_OF_STAGE = {1:'Pink',2:'Pink',3:'Pink',4:'Red',5:'Red'};
+
+/* ============================================================
+   도우미
+============================================================ */
+function $(s){ return document.querySelector(s); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function pad2(n){ return (n<10?'0':'')+n; }
+function lsGet(k){ try{ return localStorage.getItem(k)||''; }catch(e){ return ''; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function setMsg(el,t,cls){ el.textContent=t||''; el.className='msg'+(cls?' '+cls:''); }
+var ERR = {
+  bad_password:'비밀번호가 맞지 않습니다.', too_many:'실패가 너무 많아 잠시 후 다시 시도해 주세요.',
+  unauthorized:'로그인이 만료되었습니다. 다시 로그인하세요.', forbidden:'권한이 없습니다.',
+  too_large:'파일이 너무 큽니다.', bad_file:'올바른 파일 형식이 아닙니다.', network:'연결할 수 없습니다. 주소와 인터넷을 확인하세요.',
+  admin_password_not_set:'Worker에 관리자 비밀번호가 설정되지 않았습니다.', server:'서버 오류'
+};
+function errText(res){ var c=res&&res.json&&res.json.error; return ERR[c]||('오류 ('+(c||res.status)+')'); }
+
+/* ============================================================
+   Worker / Firebase 통신
+============================================================ */
+var base = '', token = '';
+function normBase(v){
+  v = String(v||'').trim().replace(/\/+$/,'');
+  if (!/^https:\/\/[^\s/]+$/i.test(v) && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(v)) return '';
+  return v;
+}
+function api(path, opt){
+  opt = opt || {};
+  var h = {}; for (var k in (opt.headers||{})) h[k]=opt.headers[k];
+  if (token) h.Authorization = 'Bearer '+token;
+  var o = {}; for (var k2 in opt) o[k2]=opt[k2]; o.headers = h;
+  return fetch(base+path, o).then(function(r){
+    return r.json().catch(function(){return null;}).then(function(j){
+      if (r.status===401 && token){ lockAll('로그인이 만료되었습니다. 다시 로그인하세요.'); }
+      return {ok:r.ok,status:r.status,json:j};
+    });
+  }).catch(function(){ return {ok:false,status:0,json:{error:'network'}}; });
+}
+function fbGet(path){
+  return fetch(FIREBASE+'/'+path+'.json').then(function(r){ if(!r.ok) throw new Error('db'); return r.json(); });
+}
+
+/* ============================================================
+   1. 연결
+============================================================ */
+var SEC_LOCK = ['#secOrt','#secCover','#secBook','#secStat'];
+function setLocked(on){ SEC_LOCK.forEach(function(s){ $(s).classList.toggle('locked', on); }); }
+function lockAll(msg){
+  token=''; setLocked(true);
+  $('#connChip').textContent='로그인 필요'; $('#connChip').className='chip bad';
+  if (msg) setMsg($('#connMsg'), msg, 'bad');
+}
+$('#baseUrl').value = lsGet(LS_BASE);
+
+$('#btnHealth').onclick = function(){
+  var b = normBase($('#baseUrl').value);
+  if (!b){ setMsg($('#connMsg'),'주소는 https:// 로 시작하는 Worker 주소여야 합니다.','bad'); return; }
+  base = b; lsSet(LS_BASE, b);
+  setMsg($('#connMsg'),'확인 중…');
+  api('/health').then(function(r){
+    if (!r.ok || !r.json || !r.json.ok){ setMsg($('#connMsg'), '연결 실패: '+errText(r),'bad'); return; }
+    var j=r.json, miss=[];
+    if(!j.bucket) miss.push('저장소(R2) 연결'); if(!j.adminPassword) miss.push('관리자 비밀번호'); if(!j.tokenSecret) miss.push('토큰 비밀값');
+    if (miss.length) setMsg($('#connMsg'),'연결은 됐지만 설정이 빠져 있습니다: '+miss.join(', '),'bad');
+    else { setMsg($('#connMsg'),'연결 정상 (Worker '+j.version+'). 비밀번호를 입력하고 로그인하세요.','ok'); $('#connChip').textContent='연결됨'; $('#connChip').className='chip info'; }
+  });
+};
+$('#btnLogin').onclick = function(){
+  var b = normBase($('#baseUrl').value);
+  if (!b){ setMsg($('#connMsg'),'Worker 주소를 먼저 입력하세요.','bad'); return; }
+  base=b; lsSet(LS_BASE,b);
+  var pw = $('#adminPw').value;
+  if (!pw){ setMsg($('#connMsg'),'비밀번호를 입력하세요.','bad'); return; }
+  setMsg($('#connMsg'),'로그인 중…');
+  api('/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})}).then(function(r){
+    $('#adminPw').value='';
+    if (!r.ok){ setMsg($('#connMsg'),errText(r),'bad'); return; }
+    token = r.json.token; setLocked(false);
+    $('#connChip').textContent='로그인됨'; $('#connChip').className='chip ok';
+    setMsg($('#connMsg'),'로그인되었습니다 (2시간 유효).','ok');
+  });
+};
+$('#adminPw').addEventListener('keydown',function(e){ if(e.key==='Enter') $('#btnLogin').click(); });
+
+/* ============================================================
+   2. ORT 일괄 등록
+============================================================ */
+var rows = [];            // 파일 한 개 = 행 한 개
+var dbBooks = {};         // 현재 booklibrary
+var r2Audio = {};         // 현재 R2 음원 {번호: true}
+var filterKey = 'all';
+var running = false;
+var rowSeq = 0;
+
+function parseName(fn){
+  var m = /^(\d)\s*-\s*(\d{1,2})[ _]+(.+)\.mp3$/i.exec(fn);
+  if (!m) return null;
+  return {stage:parseInt(m[1],10), seq:parseInt(m[2],10), title:m[3].replace(/_/g,' ').replace(/\s+/g,' ').trim()};
+}
+function makeRow(file){
+  var r = {id:++rowSeq, file:file, name:file.name, stage:0, seq:0, no:'', title:'', level:'', errors:[], warns:[], action:'new', include:true, dbBook:null, state:'', stateMsg:''};
+  var p = parseName(file.name);
+  if (!p){ r.errors.push('파일 이름을 읽을 수 없음 (예: 1-1_At_School.mp3)'); r.include=false; r._off=true; return r; }
+  r.stage=p.stage; r.seq=p.seq; r.title=p.title;
+  if (p.stage<1 || p.stage>5){ r.errors.push('Stage 범위 밖 (1~5만 가능)'); }
+  else if (p.seq<1 || p.seq>99){ r.errors.push('번호 범위 밖 (1~99)'); }
+  else { r.no='0'+p.stage+pad2(p.seq); r.level=LEVEL_OF_STAGE[p.stage]; }
+  if (file.size<MIN_BYTES || file.size>MAX_BYTES) r.errors.push('파일 크기 이상 ('+Math.round(file.size/1024)+'KB)');
+  if (r.errors.length){ r.include=false; r._off=true; }
+  return r;
+}
+function normTitle(t){ return String(t||'').toLowerCase().replace(/\s+/g,' ').trim(); }
+
+function evaluate(){
+  // 같은 번호 파일 중복 / 같은 Stage 안 제목 중복 / 의심 제목 / DB·R2 대조
+  var byNo = {}, byTitle = {};
+  rows.forEach(function(r){
+    if (r.no){ (byNo[r.no]=byNo[r.no]||[]).push(r); }
+    if (r.title){ var k=r.stage+'|'+normTitle(r.title); (byTitle[k]=byTitle[k]||[]).push(r); }
+  });
+  rows.forEach(function(r){
+    var keepErr = r.errors.filter(function(e){ return e.indexOf('같은 번호')!==0 && e.indexOf('번호 충돌')!==0 && e.indexOf('제목이 비어')!==0; });
+    r.errors = keepErr; r.warns = [];
+    if (r.no && byNo[r.no].length>1) r.errors.push('같은 번호 파일이 '+byNo[r.no].length+'개 있음');
+    if (!String(r.title).trim() && r.no) r.errors.push('제목이 비어 있음');
+    var t = String(r.title||'');
+    if (t){
+      if (/^[a-z]/.test(t)) r.warns.push('소문자로 시작');
+      if (/[0-9]/.test(t)) r.warns.push('숫자 포함');
+      if (/[^A-Za-z\s'’\-,.?!]/.test(t) && !/[0-9]/.test(t)) r.warns.push('특수문자 포함');
+      if (KNOWN_SUSPECT.indexOf(normTitle(t))>=0) r.warns.push('철자 확인 필요(의심 제목)');
+      if (byTitle[r.stage+'|'+normTitle(t)] && byTitle[r.stage+'|'+normTitle(t)].length>1) r.warns.push('같은 Stage에 같은 제목');
+    }
+    r.dbBook = (r.no && dbBooks[r.no]) ? dbBooks[r.no] : null;
+    if (r.dbBook){
+      var sameTitle = normTitle(r.dbBook.title)===normTitle(r.title);
+      if (r.dbBook.series!=='ORT' && !sameTitle){
+        r.errors.push('번호 충돌: 이미 "'+r.dbBook.title+'" 책이 이 번호를 쓰고 있음');
+      } else {
+        if (!sameTitle) r.warns.push('책 목록 제목 "'+r.dbBook.title+'" 은(는) 바뀌지 않음');
+        if (r.action==='new') r.action = (r.dbBook.audio && r2Audio[r.no]) ? 'skip' : 'replace';
+      }
+    } else if (r.no) {
+      r.action = 'new';
+    }
+    if (r.errors.length){ r.include=false; r._off=true; }
+    else if (r._off){ r.include=true; r._off=false; }
+  });
+}
+
+function rowKind(r){
+  if (r.state==='ok') return 'done';
+  if (r.errors.length) return 'err';
+  if (r.state==='fail') return 'err';
+  if (r.warns.length) return 'warn';
+  return 'okrow';
+}
+function statusHtml(r){
+  if (r.state==='ok') return '<span class="chip ok">완료</span> <span class="mini">'+esc(r.stateMsg)+'</span>';
+  if (r.state==='fail') return '<span class="chip bad">실패</span> <span class="mini">'+esc(r.stateMsg)+'</span>';
+  if (r.state==='busy') return '<span class="chip info">진행 중…</span>';
+  if (r.errors.length) return '<span class="chip bad">오류</span>'+r.errors.map(function(e){return '<span class="flag bad">'+esc(e)+'</span>';}).join('');
+  var s;
+  if (!r.dbBook) s='<span class="chip info">새 책</span>';
+  else if (r.action==='skip') s='<span class="chip">이미 있음 · 건너뜀</span>';
+  else s='<span class="chip warn">이미 있음 · 음원 올리기</span>';
+  if (r.dbBook){
+    s += ' <select data-act="'+r.id+'" style="font-size:12px;padding:3px 6px;"><option value="skip"'+(r.action==='skip'?' selected':'')+'>건너뜀</option><option value="replace"'+(r.action==='replace'?' selected':'')+'>음원 올리기(교체)</option></select>';
+  }
+  return s + r.warns.map(function(w){return '<span class="flag">⚠ '+esc(w)+'</span>';}).join('');
+}
+
+function visible(r){
+  if (filterKey==='all') return true;
+  if (filterKey==='new') return !r.errors.length && !r.dbBook;
+  if (filterKey==='exists') return !!r.dbBook && !r.errors.length;
+  if (filterKey==='err') return r.errors.length>0 || r.state==='fail';
+  if (filterKey==='warn') return r.warns.length>0 && !r.errors.length;
+  return true;
+}
+function render(){
+  var tb = $('#ortTable tbody'); var html=[];
+  rows.sort(function(a,b){ return (a.no||'z'+a.name).localeCompare(b.no||'z'+b.name); });
+  rows.forEach(function(r){
+    if (!visible(r)) return;
+    var dis = (r.errors.length||r.state==='ok'||running)?' disabled':'';
+    var willDo = r.include && !r.errors.length && !(r.dbBook && r.action==='skip');
+    html.push('<tr data-row="'+r.id+'" class="'+rowKind(r)+'">'+
+      '<td><input type="checkbox" data-inc="'+r.id+'"'+(willDo?' checked':'')+dis+'></td>'+
+      '<td class="fn" title="'+esc(r.name)+'">'+esc(r.name)+'</td>'+
+      '<td class="mono"><b>'+esc(r.no||'-')+'</b></td>'+
+      '<td>'+(r.stage||'-')+'</td>'+
+      '<td><input type="text" data-title="'+r.id+'" value="'+esc(r.title)+'"'+(r.state==='ok'||running?' disabled':'')+'></td>'+
+      '<td>'+(r.level?'<span class="lv '+r.level+'"></span>'+r.level:'-')+'</td>'+
+      '<td>'+statusHtml(r)+'</td></tr>');
+  });
+  tb.innerHTML = html.join('');
+  renderStats(); renderFilters();
+}
+function refresh(){
+  rows.forEach(function(r){
+    var tr=$('#ortTable tbody tr[data-row="'+r.id+'"]'); if(!tr) return;
+    var willDo = r.include && !r.errors.length && !(r.dbBook && r.action==='skip');
+    tr.className=rowKind(r);
+    var c=tr.querySelector('input[data-inc]'); c.checked=willDo; c.disabled=!!(r.errors.length||r.state==='ok'||running);
+    tr.children[6].innerHTML=statusHtml(r);
+  });
+  renderStats();
+}
+function counts(){
+  var c={total:rows.length,nw:0,rep:0,skip:0,err:0,warn:0,done:0,fail:0};
+  rows.forEach(function(r){
+    if (r.state==='ok'){ c.done++; return; }
+    if (r.state==='fail') c.fail++;
+    if (r.errors.length){ c.err++; return; }
+    if (r.warns.length) c.warn++;
+    if (!r.dbBook) { if (r.include) c.nw++; }
+    else if (r.action==='replace' && r.include) c.rep++;
+    else c.skip++;
+  });
+  return c;
+}
+function renderStats(){
+  var c = counts();
+  $('#ortStats').innerHTML =
+    '<div class="stat"><b>'+c.total+'</b><span>선택한 파일</span></div>'+
+    '<div class="stat"><b style="color:var(--info)">'+c.nw+'</b><span>새로 등록할 책</span></div>'+
+    '<div class="stat"><b style="color:var(--warn)">'+c.rep+'</b><span>음원만 올릴 기존 책</span></div>'+
+    '<div class="stat"><b>'+c.skip+'</b><span>건너뜀</span></div>'+
+    '<div class="stat"><b style="color:var(--bad)">'+c.err+'</b><span>오류(올라가지 않음)</span></div>'+
+    '<div class="stat"><b style="color:var(--warn)">'+c.warn+'</b><span>제목 확인 필요</span></div>'+
+    (c.done||c.fail?'<div class="stat"><b style="color:var(--ok)">'+c.done+'</b><span>완료 / 실패 '+c.fail+'</span></div>':'');
+  $('#btnStart').disabled = running || (c.nw+c.rep)===0;
+  $('#btnRetry').style.display = (c.fail>0 && !running) ? '' : 'none';
+}
+function renderFilters(){
+  var defs=[['all','전체'],['new','새 책'],['exists','이미 있음'],['warn','제목 확인 필요'],['err','오류·실패']];
+  $('#ortFilters').innerHTML = defs.map(function(d){ return '<button data-flt="'+d[0]+'" class="'+(filterKey===d[0]?'on':'')+'">'+d[1]+'</button>'; }).join('');
+}
+
+$('#ortFilters').addEventListener('click',function(e){ var k=e.target.getAttribute&&e.target.getAttribute('data-flt'); if(k){ filterKey=k; render(); } });
+$('#ortTable').addEventListener('change',function(e){
+  var t=e.target, id;
+  if ((id=t.getAttribute('data-inc'))){ var r=find(id); if(r){ r.include=t.checked; if(r.dbBook&&t.checked&&r.action==='skip') r.action='replace'; if(r.dbBook&&!t.checked) r.action='skip'; render(); } }
+  if ((id=t.getAttribute('data-act'))){ var r2=find(id); if(r2){ r2.action=t.value; r2.include=(t.value!=='skip'); render(); } }
+});
+$('#ortTable').addEventListener('input',function(e){
+  var id=e.target.getAttribute('data-title'); if(!id) return;
+  var r=find(id); if(r){ r.title=e.target.value; }
+});
+$('#ortTable').addEventListener('focusout',function(e){
+  var id=e.target.getAttribute&&e.target.getAttribute('data-title'); if(!id) return;
+  var r=find(id); if(r){ r.title=r.title.replace(/\s+/g,' ').trim(); e.target.value=r.title; evaluate(); refresh(); }
+});
+$('#chkAll').onchange=function(){
+  var on=this.checked;
+  rows.forEach(function(r){ if(r.errors.length||r.state==='ok') return; r.include=on; if(r.dbBook) r.action=on?'replace':'skip'; });
+  render();
+};
+function find(id){ id=parseInt(id,10); for(var i=0;i<rows.length;i++) if(rows[i].id===id) return rows[i]; return null; }
+
+$('#btnPickFiles').onclick=function(){ $('#inFiles').click(); };
+$('#btnPickDir').onclick=function(){ $('#inDir').click(); };
+$('#inFiles').onchange=function(){ loadFiles(this.files); this.value=''; };
+$('#inDir').onchange=function(){ loadFiles(this.files); this.value=''; };
+
+function loadFiles(list){
+  var files = Array.prototype.slice.call(list||[]).filter(function(f){ return /\.mp3$/i.test(f.name); });
+  if (!files.length){ $('#ortSummary').textContent='MP3 파일이 없습니다.'; return; }
+  $('#ortSummary').textContent='책 목록과 저장소를 확인하는 중…';
+  Promise.all([ fbGet('booklibrary'), api('/admin/list') ]).then(function(res){
+    var lib = res[0] || {};
+    dbBooks = {}; Object.keys(lib).forEach(function(k){ if (lib[k] && lib[k].title) dbBooks[k]=lib[k]; });
+    if (!res[1].ok){ $('#ortSummary').textContent='저장소 목록을 읽지 못했습니다: '+errText(res[1]); return; }
+    r2Audio = {}; (res[1].json.audio||[]).forEach(function(a){ r2Audio[a.no]=true; });
+    rows = files.map(makeRow);
+    evaluate();
+    $('#ortBody').style.display='';
+    $('#ortSummary').textContent=files.length+'개 파일을 분석했습니다. 아래 표를 확인하세요.';
+    render();
+  }).catch(function(){ $('#ortSummary').textContent='책 목록을 읽지 못했습니다. 인터넷을 확인하세요.'; });
+}
+
+/* ---- 등록 실행 ---- */
+function targets(retryOnly){
+  return rows.filter(function(r){
+    if (r.errors.length || r.state==='ok') return false;
+    if (retryOnly) return r.state==='fail';
+    if (!r.include) return false;
+    return !r.dbBook || r.action==='replace';
+  });
+}
+function putFile(kind, no, blob, name){
+  return api('/admin/'+kind+'/'+no,{method:'PUT',headers:{'X-Filename':encodeURIComponent(name||''),'Content-Type':blob.type||'application/octet-stream'},body:blob});
+}
+function processRow(r){
+  r.state='busy'; r.stateMsg='';
+  return putFile('audio', r.no, r.file, r.name).then(function(up){
+    if (!up.ok){ r.state='fail'; r.stateMsg='업로드 실패: '+errText(up); return; }
+    if (r.dbBook){ r.state='ok'; r.stateMsg='음원 교체됨'; r2Audio[r.no]=true; return; }
+    return api('/admin/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:[{
+      no:r.no, title:r.title, level:r.level, series:'ORT', stage:r.stage, audioVer:up.json.audioVer }]})
+    }).then(function(rg){
+      var st = rg.ok && rg.json.results && rg.json.results[0] && rg.json.results[0].status;
+      if (st==='created'){ r.state='ok'; r.stateMsg='등록됨'; r2Audio[r.no]=true; dbBooks[r.no]={title:r.title,series:'ORT',audio:true}; r.dbBook=dbBooks[r.no]; r.action='skip'; }
+      else if (st==='exists'){ r.state='fail'; r.stateMsg='음원은 올렸지만 이미 다른 곳에서 같은 번호가 등록됨 — 화면을 새로 고쳐 확인하세요'; }
+      else { r.state='fail'; r.stateMsg='음원은 올렸지만 책 목록 등록 실패: '+(rg.ok?st:errText(rg)); }
+    });
+  });
+}
+function runQueue(list){
+  running=true; render();
+  var total=list.length, done=0, idx=0, fatal=false;
+  $('#runBarWrap').style.display=''; $('#runBar').style.width='0';
+  function bump(){ done++; $('#runBar').style.width=(done/total*100)+'%'; $('#runMsg').textContent=done+' / '+total+' 처리됨'; if(done%5===0||done===total) render(); }
+  function worker(){
+    if (fatal || idx>=total) return Promise.resolve();
+    var r=list[idx++];
+    return processRow(r).then(function(){
+      if (!token) fatal=true;   // 로그인 만료되면 중단
+      bump(); return worker();
+    });
+  }
+  return Promise.all([worker(),worker(),worker()]).then(function(){
+    running=false; render();
+    var c=counts();
+    $('#runMsg').textContent='끝났습니다. 완료 '+c.done+' · 실패 '+c.fail+(fatal?' (로그인 만료로 중단됨)':'');
+  });
+}
+$('#btnStart').onclick=function(){
+  var list=targets(false);
+  var nw=list.filter(function(r){return !r.dbBook;}).length, rep=list.length-nw;
+  var warn=list.filter(function(r){return r.warns.length;}).length;
+  var msg='새 책 '+nw+'권을 책 목록에 등록하고 음원을 올립니다.\n기존 책 '+rep+'권은 음원만 올립니다(제목은 바뀌지 않습니다).';
+  if (warn) msg+='\n\n제목 확인 필요 표시가 있는 책이 '+warn+'권 있습니다. 제목을 확인하셨나요?';
+  msg+='\n\n진행할까요?';
+  if (!confirm(msg)) return;
+  runQueue(list);
+};
+$('#btnRetry').onclick=function(){
+  var list=targets(true); list.forEach(function(r){ r.state=''; });
+  runQueue(list);
+};
+
+/* ============================================================
+   3. 표지
+============================================================ */
+var covers = [];   // {file, no, error}
+$('#btnPickCover').onclick=function(){ $('#inCover').click(); };
+$('#inCover').onchange=function(){
+  var files=Array.prototype.slice.call(this.files||[]); this.value='';
+  $('#coverList').textContent='확인 중…';
+  fbGet('booklibrary').then(function(lib){
+    lib=lib||{};
+    covers=files.map(function(f){
+      var m=/^(\d{4})\.(jpe?g|png|webp)$/i.exec(f.name), c={file:f,no:m?m[1]:'',error:'',state:''};
+      if(!m) c.error='파일 이름이 번호 4자리여야 합니다 (예: 0101.jpg)';
+      else if(!(lib[c.no]&&lib[c.no].title)) c.error='책 목록에 없는 번호입니다';
+      else c.title=lib[c.no].title;
+      return c;
+    });
+    renderCovers();
+  }).catch(function(){ $('#coverList').textContent='책 목록을 읽지 못했습니다.'; });
+};
+function renderCovers(){
+  var ok=covers.filter(function(c){return !c.error;}).length;
+  $('#coverList').innerHTML = covers.length ? ('<ul class="plain">'+covers.map(function(c){
+    return '<li><span class="mono">'+esc(c.file.name)+'</span> '+(c.error?'<span class="chip bad">'+esc(c.error)+'</span>':'→ '+esc(c.title)+' '+(c.state==='ok'?'<span class="chip ok">완료</span>':c.state?'<span class="chip bad">'+esc(c.state)+'</span>':''))+'</li>';
+  }).join('')+'</ul>') : '';
+  $('#btnCoverGo').disabled = !ok;
+}
+function shrink(file){
+  return createImageBitmap(file).then(function(bmp){
+    var w=Math.min(600,bmp.width), h=Math.round(bmp.height*w/bmp.width);
+    var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    var cx=cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,w,h); cx.drawImage(bmp,0,0,w,h);
+    return new Promise(function(res,rej){ cv.toBlob(function(b){ b?res(b):rej(new Error('변환 실패')); },'image/jpeg',0.85); });
+  });
+}
+$('#btnCoverGo').onclick=function(){
+  var list=covers.filter(function(c){return !c.error && c.state!=='ok';});
+  this.disabled=true;
+  var p=Promise.resolve();
+  list.forEach(function(c){ p=p.then(function(){
+    return shrink(c.file).then(function(blob){ return putFile('cover',c.no,blob,c.file.name); })
+      .then(function(r){ c.state = r.ok ? 'ok' : errText(r); renderCovers(); })
+      .catch(function(){ c.state='이미지를 읽지 못함'; renderCovers(); });
+  }); });
+  p.then(renderCovers);
+};
+
+/* ============================================================
+   4. 기존 원서 음원
+============================================================ */
+var bk = {no:'', title:'', file:null};
+$('#btnBkFind').onclick=function(){
+  var no=$('#bkNo').value.trim();
+  bk={no:'',title:'',file:null}; $('#btnBkPick').disabled=true; $('#btnBkGo').disabled=true; $('#bkFile').textContent=''; setMsg($('#bkMsg'),'');
+  if(!/^\d{4}$/.test(no)){ $('#bkInfo').textContent='4자리 숫자를 입력하세요'; return; }
+  fbGet('booklibrary/'+no).then(function(b){
+    if(!b||!b.title){ $('#bkInfo').innerHTML='<span class="chip bad">책 목록에 없는 번호</span>'; return; }
+    bk.no=no; bk.title=b.title;
+    $('#bkInfo').innerHTML=esc(b.title)+' <span class="chip">'+(b.audio?'음원 있음 (올리면 교체)':'음원 없음')+'</span>';
+    $('#btnBkPick').disabled=false;
+  }).catch(function(){ $('#bkInfo').textContent='조회 실패'; });
+};
+$('#btnBkPick').onclick=function(){ $('#inBk').click(); };
+$('#inBk').onchange=function(){
+  var f=this.files&&this.files[0]; this.value=''; if(!f) return;
+  if(!/\.mp3$/i.test(f.name)||f.size<MIN_BYTES||f.size>MAX_BYTES){ setMsg($('#bkMsg'),'MP3 파일(10KB~60MB)만 올릴 수 있습니다.','bad'); return; }
+  bk.file=f; $('#bkFile').textContent=f.name+' ('+(f.size/1048576).toFixed(1)+'MB)'; $('#btnBkGo').disabled=false; setMsg($('#bkMsg'),'');
+};
+$('#btnBkGo').onclick=function(){
+  if(!bk.no||!bk.file) return;
+  if(!confirm('"'+bk.title+'" ('+bk.no+') 에 이 음원을 올릴까요? 이미 음원이 있으면 교체됩니다.')) return;
+  var btn=this; btn.disabled=true; setMsg($('#bkMsg'),'올리는 중…');
+  putFile('audio',bk.no,bk.file,bk.file.name).then(function(r){
+    if(r.ok){ setMsg($('#bkMsg'),'올렸습니다. 책 목록에 음원 표시가 되었습니다.','ok'); }
+    else { setMsg($('#bkMsg'),'실패: '+errText(r),'bad'); btn.disabled=false; }
+  });
+};
+
+/* ============================================================
+   5. 현황 · 백업
+============================================================ */
+$('#btnStat').onclick=function(){
+  var out=$('#statOut'); out.textContent='점검 중…';
+  Promise.all([fbGet('booklibrary'),api('/admin/list')]).then(function(res){
+    if(!res[1].ok){ out.textContent='저장소 목록을 읽지 못했습니다: '+errText(res[1]); return; }
+    var lib=res[0]||{}, au={}, cv={};
+    res[1].json.audio.forEach(function(a){au[a.no]=a;}); res[1].json.covers.forEach(function(a){cv[a.no]=a;});
+    var ort=[0,0,0,0,0,0], ortAu=[0,0,0,0,0,0], ortCv=[0,0,0,0,0,0], other=0, otherAu=0;
+    var noBook=[], noFile=[];
+    Object.keys(lib).forEach(function(k){
+      var b=lib[k]; if(!b||!b.title) return;
+      if(b.series==='ORT'){ var s=b.stage||0; if(s>=1&&s<=5){ ort[s]++; if(au[k]) ortAu[s]++; if(cv[k]) ortCv[s]++; } }
+      else { other++; if(au[k]) otherAu++; }
+      if(b.audio && !au[k]) noFile.push(k+' '+b.title);
+    });
+    Object.keys(au).forEach(function(k){ if(!(lib[k]&&lib[k].title)) noBook.push(k); });
+    var h='<table class="tbl" style="max-width:520px;"><thead><tr><th>구분</th><th>책 목록</th><th>음원</th><th>표지</th></tr></thead><tbody>';
+    for(var s=1;s<=5;s++) h+='<tr><td>ORT Stage '+s+'</td><td>'+ort[s]+'</td><td>'+ortAu[s]+'</td><td>'+ortCv[s]+'</td></tr>';
+    h+='<tr><td>그 외 원서</td><td>'+other+'</td><td>'+otherAu+'</td><td>-</td></tr></tbody></table>';
+    h+= (noBook.length? '<p class="msg bad">저장소에는 음원이 있는데 책 목록에 없는 번호: '+esc(noBook.join(', '))+'</p>':'')+
+        (noFile.length? '<p class="msg bad">책 목록에는 음원 표시가 있는데 저장소에 파일이 없는 책: '+esc(noFile.join(', '))+'</p>':'')+
+        ((!noBook.length&&!noFile.length)?'<p class="msg ok">저장소와 책 목록이 서로 맞습니다.</p>':'');
+    out.innerHTML=h;
+  }).catch(function(){ out.textContent='책 목록을 읽지 못했습니다.'; });
+};
+$('#btnExport').onclick=function(){
+  api('/admin/export').then(function(r){
+    if(!r.ok){ $('#statOut').textContent='백업 실패: '+errText(r); return; }
+    var d=new Date(), name='refy-books-backup-'+d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+'.json';
+    var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(r.json,null,1)],{type:'application/json'}));
+    a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+    $('#statOut').innerHTML='<span class="msg ok">'+esc(name)+' 파일을 내려받았습니다. 안전한 곳에 보관하세요.</span>';
+  });
+};
+</script>
+</body>
+</html>

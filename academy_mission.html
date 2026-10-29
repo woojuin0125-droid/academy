@@ -792,7 +792,7 @@ function lookupBook(numStr){
 var pendingBook = null;
 function openStarPicker(numStr, book){
   pendingBook = {
-    number: parseInt(numStr, 10),
+    number: numStr,
     title: book.title,
     level: book.level || '',
     wordCount: book.wordCount || 0,
