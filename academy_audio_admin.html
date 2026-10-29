@@ -881,17 +881,17 @@ $('#btnStat').onclick=function(){
     if(!res[1].ok){ out.textContent='저장소 목록을 읽지 못했습니다: '+errText(res[1]); return; }
     var lib=res[0]||{}, au={}, cv={};
     res[1].json.audio.forEach(function(a){au[a.no]=a;}); res[1].json.covers.forEach(function(a){cv[a.no]=a;});
-    var ort=[0,0,0,0,0,0], ortAu=[0,0,0,0,0,0], ortCv=[0,0,0,0,0,0], other=0, otherAu=0;
+    var ort=[0,0,0,0,0,0,0,0,0,0], ortAu=[0,0,0,0,0,0,0,0,0,0], ortCv=[0,0,0,0,0,0,0,0,0,0], other=0, otherAu=0;
     var noBook=[], noFile=[];
     Object.keys(lib).forEach(function(k){
       var b=lib[k]; if(!b||!b.title) return;
-      if(b.series==='ORT'){ var s=b.stage||0; if(s>=1&&s<=5){ ort[s]++; if(au[k]) ortAu[s]++; if(cv[k]) ortCv[s]++; } }
+      if(b.series==='ORT'){ var s=b.stage||0; if(s>=1&&s<=9){ ort[s]++; if(au[k]) ortAu[s]++; if(cv[k]) ortCv[s]++; } }
       else { other++; if(au[k]) otherAu++; }
       if(b.audio && !au[k]) noFile.push(k+' '+b.title);
     });
     Object.keys(au).forEach(function(k){ if(!(lib[k]&&lib[k].title)) noBook.push(k); });
     var h='<table class="tbl" style="max-width:520px;"><thead><tr><th>구분</th><th>책 목록</th><th>음원</th><th>표지</th></tr></thead><tbody>';
-    for(var s=1;s<=5;s++) h+='<tr><td>ORT Stage '+s+'</td><td>'+ort[s]+'</td><td>'+ortAu[s]+'</td><td>'+ortCv[s]+'</td></tr>';
+    for(var s=1;s<=9;s++) if(s<=5||ort[s]) h+='<tr><td>ORT Stage '+s+'</td><td>'+ort[s]+'</td><td>'+ortAu[s]+'</td><td>'+ortCv[s]+'</td></tr>';
     h+='<tr><td>그 외 원서</td><td>'+other+'</td><td>'+otherAu+'</td><td>-</td></tr></tbody></table>';
     h+= (noBook.length? '<p class="msg bad">저장소에는 음원이 있는데 책 목록에 없는 번호: '+esc(noBook.join(', '))+'</p>':'')+
         (noFile.length? '<p class="msg bad">책 목록에는 음원 표시가 있는데 저장소에 파일이 없는 책: '+esc(noFile.join(', '))+'</p>':'')+
