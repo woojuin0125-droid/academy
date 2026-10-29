@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎧 리파잉글리시 듣기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8EC; --card:#FFFFFF; --ink:#2B2420; --sub:#8A7A66; --line:#EDE2D0;
+    --coral:#FF7A59; --coral-deep:#E85F3E; --ok:#2E9E63; --bad:#D62839;
+    --c-pink:#FF6FA0; --c-red:#D62839; --c-orange:#F77F3E; --c-yellow:#EFB700;
+    --c-green:#2E9E63; --c-blue:#3D7BC1; --c-purple:#8354B4; --c-gray:#9A8F80;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; height:100%;}
+  body{
+    font-family:'Noto Sans KR',sans-serif; background:var(--cream); color:var(--ink);
+    -webkit-font-smoothing:antialiased; user-select:none; -webkit-user-select:none;
+    touch-action:manipulation; overflow-x:hidden;
+  }
+  .mono{font-family:'Space Grotesk',monospace;}
+  .app{max-width:760px; margin:0 auto; min-height:100%; padding:14px 20px 28px; display:flex; flex-direction:column;}
+  .bar{display:flex; align-items:center; justify-content:space-between; min-height:46px; margin-bottom:6px;}
+  .brand{font-weight:900; font-size:17px; letter-spacing:-.2px;}
+  .who{font-size:14px; color:var(--sub); display:flex; align-items:center; gap:10px;}
+  .who button{font:inherit; font-size:13px; font-weight:700; color:var(--ink); background:#fff; border:2px solid var(--line); border-radius:12px; padding:8px 12px; cursor:pointer;}
+
+  .screen{display:none; flex:1; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding-bottom:20px;}
+  .screen.on{display:flex; animation:rise .25s ease;}
+  @keyframes rise{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:none;}}
+  h1{font-size:28px; margin:0; font-weight:900; letter-spacing:-.5px;}
+  h2{font-size:24px; margin:0; font-weight:900;}
+  .sub{margin:0; color:var(--sub); font-size:16px; line-height:1.5;}
+
+  /* 키패드 */
+  .dots{display:flex; gap:12px; justify-content:center; margin:6px 0 4px;}
+  .dots i{width:62px; height:74px; border-radius:16px; background:#fff; border:3px solid var(--line); display:flex; align-items:center; justify-content:center; font:700 38px 'Space Grotesk',monospace;}
+  .dots i.on{border-color:var(--coral);}
+  .keys{display:grid; grid-template-columns:repeat(3,100px); gap:10px; justify-content:center;}
+  .keys button{height:72px; border-radius:18px; border:0; background:#fff; color:var(--ink); font:700 30px 'Space Grotesk',monospace; box-shadow:0 2px 0 var(--line); cursor:pointer;}
+  .keys button:active{transform:translateY(2px); box-shadow:none; background:#FFF0E8;}
+  .keys button.fn{font:700 17px 'Noto Sans KR',sans-serif; color:var(--sub);}
+  .keys button.blank{visibility:hidden;}
+  .keys.lock{opacity:.45; pointer-events:none;}
+  .padmsg{min-height:24px; font-size:15px; font-weight:700; color:var(--sub);}
+  .padmsg.err{color:var(--bad);}
+
+  /* 책 카드 */
+  .cover{width:210px; height:210px; border-radius:22px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.14); position:relative; background:var(--c-gray);}
+  .cover img{width:100%; height:100%; object-fit:cover; position:absolute; inset:0;}
+  .cover .t{font-weight:900; font-size:22px; line-height:1.25; padding:0 16px; position:relative; word-break:keep-all;}
+  .cover .s{font-size:13px; opacity:.9; position:relative; margin-top:6px; font-weight:700;}
+  .booktitle{font-size:26px; font-weight:900; margin:0; line-height:1.3; word-break:keep-all;}
+  .tag{display:inline-block; font-size:13px; font-weight:700; padding:4px 12px; border-radius:99px; background:#F3EBDD; color:var(--sub);}
+  .tag.re{background:#DCE9F7; color:var(--c-blue);}
+
+  /* 버튼 */
+  .btns{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:6px;}
+  .btn{font:inherit; font-size:20px; font-weight:900; border:0; border-radius:20px; padding:18px 30px; min-width:200px; cursor:pointer; background:var(--coral); color:#fff; box-shadow:0 4px 0 var(--coral-deep);}
+  .btn:active{transform:translateY(3px); box-shadow:none;}
+  .btn.alt{background:#fff; color:var(--ink); box-shadow:0 4px 0 var(--line); border:2px solid var(--line);}
+  .btn.alt:active{box-shadow:none;}
+  .linkbtn{font:inherit; font-size:15px; font-weight:700; color:var(--sub); background:none; border:0; padding:12px; cursor:pointer; text-decoration:underline;}
+
+  /* 받기 */
+  .meter{width:min(440px,86vw); height:16px; background:#F3EBDD; border-radius:99px; overflow:hidden;}
+  .meter>i{display:block; height:100%; width:0; background:var(--coral); border-radius:99px; transition:width .15s;}
+
+  /* 재생기 */
+  .eq{display:flex; gap:7px; align-items:flex-end; height:46px; margin:2px 0;}
+  .eq b{width:9px; height:10px; border-radius:5px; background:var(--coral);}
+  .playing .eq b{animation:eq 0.9s ease-in-out infinite;}
+  .playing .eq b:nth-child(2){animation-delay:.15s;} .playing .eq b:nth-child(3){animation-delay:.3s;}
+  .playing .eq b:nth-child(4){animation-delay:.45s;} .playing .eq b:nth-child(5){animation-delay:.6s;}
+  @keyframes eq{0%,100%{height:10px;}50%{height:44px;}}
+  @media (prefers-reduced-motion:reduce){ .playing .eq b{animation:none; height:28px;} .screen.on{animation:none;} }
+  .big{width:132px; height:132px; border-radius:50%; border:0; background:var(--coral); color:#fff; font-size:56px; cursor:pointer; box-shadow:0 8px 0 var(--coral-deep); display:flex; align-items:center; justify-content:center;}
+  .big:active{transform:translateY(6px); box-shadow:0 2px 0 var(--coral-deep);}
+  .track{width:min(520px,88vw); height:14px; background:#F3EBDD; border-radius:99px; overflow:hidden;}
+  .track>i{display:block; height:100%; width:0; background:var(--ok); border-radius:99px;}
+  .time{font:600 17px 'Space Grotesk',monospace; color:var(--sub);}
+  .hint{font-size:14px; color:var(--sub);}
+
+  .party{font-size:84px; animation:pop .6s cubic-bezier(.2,1.6,.4,1);}
+  @keyframes pop{from{transform:scale(.2); opacity:0;}to{transform:none; opacity:1;}}
+
+  #toast{position:fixed; left:50%; bottom:30px; transform:translateX(-50%); background:var(--ink); color:var(--cream); padding:14px 22px; border-radius:16px; font-size:16px; font-weight:700; max-width:88vw; text-align:center; opacity:0; pointer-events:none; transition:opacity .2s; z-index:50;}
+  #toast.on{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bar">
+    <div class="brand">🎧 리파잉글리시 듣기</div>
+    <div class="who" id="who" style="display:none;"><span id="whoName"></span><button id="btnLogout">다른 친구가 사용할래요</button></div>
+  </div>
+
+  <!-- 1. 내 번호 -->
+  <section class="screen" id="scrLogin">
+    <h1>내 번호를 눌러 주세요</h1>
+    <p class="sub">선생님이 알려 준 4자리 번호예요</p>
+    <div id="padLogin"></div>
+  </section>
+
+  <!-- 2. 책 번호 -->
+  <section class="screen" id="scrBook">
+    <h1 id="hello">안녕하세요!</h1>
+    <p class="sub">책 번호를 눌러 주세요</p>
+    <div id="padBook"></div>
+  </section>
+
+  <!-- 3. 이 책이 맞나요 -->
+  <section class="screen" id="scrConfirm">
+    <p class="sub">이 책이 맞나요?</p>
+    <div class="cover" id="cvConfirm"></div>
+    <p class="booktitle" id="cfTitle"></p>
+    <div><span class="tag" id="cfTag"></span></div>
+    <div class="btns">
+      <button class="btn" id="btnYes">네, 맞아요</button>
+      <button class="btn alt" id="btnNo">아니에요</button>
+    </div>
+  </section>
+
+  <!-- 4a. 이미 읽은 책 -->
+  <section class="screen" id="scrReread">
+    <div style="font-size:64px;">📗</div>
+    <h1>이미 읽은 책입니다</h1>
+    <p class="booktitle" id="rrTitle"></p>
+    <p class="sub" id="rrSub"></p>
+    <div class="btns">
+      <button class="btn" id="btnReread">다시 읽기</button>
+      <button class="btn alt" id="btnOther1">다른 책 읽기</button>
+    </div>
+  </section>
+
+  <!-- 4b. 듣던 책 -->
+  <section class="screen" id="scrResume">
+    <div style="font-size:64px;">🔖</div>
+    <h1>듣던 책이에요</h1>
+    <p class="booktitle" id="rsTitle"></p>
+    <p class="sub" id="rsSub"></p>
+    <div class="btns">
+      <button class="btn" id="btnContinue">이어서 듣기</button>
+      <button class="btn alt" id="btnRestart">처음부터 다시</button>
+    </div>
+  </section>
+
+  <!-- 5. 음원 받기 -->
+  <section class="screen" id="scrPrep">
+    <div style="font-size:56px;">⏳</div>
+    <h2 id="prepText">음원을 준비하고 있어요</h2>
+    <div class="meter"><i id="prepBar"></i></div>
+    <p class="hint">잠시만 기다려 주세요</p>
+  </section>
+
+  <!-- 6. 듣기 -->
+  <section class="screen" id="scrPlay">
+    <p class="booktitle" id="plTitle"></p>
+    <span class="tag" id="plTag"></span>
+    <div class="eq"><b></b><b></b><b></b><b></b><b></b></div>
+    <button class="big" id="btnPlay" aria-label="재생">▶</button>
+    <div class="track"><i id="plBar"></i></div>
+    <div class="time" id="plTime">0:00 / 0:00</div>
+    <p class="hint" id="plHint">끝까지 들으면 읽은 책으로 기록돼요</p>
+    <button class="linkbtn" id="btnStop">그만 듣기</button>
+  </section>
+
+  <!-- 7. 끝 -->
+  <section class="screen" id="scrFinish">
+    <div class="party">🎉</div>
+    <h1>참 잘했어요!</h1>
+    <p class="booktitle" id="fnTitle"></p>
+    <div><span class="tag re" id="fnTag" style="display:none;"></span></div>
+    <p class="sub">다 들었어요. 기록되었어요.</p>
+    <div class="btns">
+      <button class="btn" id="btnOther2">다른 책 읽기</button>
+      <button class="btn alt" id="btnEnd">끝내기</button>
+    </div>
+  </section>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   설정
+============================================================ */
+var WORKER = window.__WORKER || 'https://academy-audio-worker.woojuin0125.workers.dev';
+var IDLE_MS = window.__IDLE_MS || 150000;     // 듣지 않고 2분 30초 가만히 있으면 처음 화면으로
+var SAVE_EVERY = window.__SAVE_EVERY || 20000; // 듣는 중 진행 저장 간격
+var DONE_RATIO = 0.8;                         // 끝까지 + 누적 재생 80% 이상이어야 "들었다"
+var LEVEL_COLOR = {Pink:'#FF6FA0',Red:'#D62839',Orange:'#F77F3E',Yellow:'#EFB700',Green:'#2E9E63',Blue:'#3D7BC1',Purple:'#8354B4'};
+
+function $(s){ return document.querySelector(s); }
+function fmt(sec){ sec=Math.max(0,Math.floor(sec||0)); return Math.floor(sec/60)+':'+('0'+(sec%60)).slice(-2); }
+function show(id){
+  var all=document.querySelectorAll('.screen'); for(var i=0;i<all.length;i++) all[i].classList.remove('on');
+  $(id).classList.add('on'); S.screen=id;
+}
+var toastT=null;
+function toast(t,ms){ var el=$('#toast'); el.textContent=t; el.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(function(){ el.classList.remove('on'); }, ms||3200); }
+
+/* ============================================================
+   상태
+============================================================ */
+var S = { token:'', sid:'', name:'', book:null, run:null, screen:'', busy:false, lastAct:Date.now() };
+var A = null, audioUrl = '', playing = false, positioned = false, lastT = null, saveTimer = null;
+
+/* ============================================================
+   통신 (Worker) + 실패 시 기기 보관 후 재전송
+============================================================ */
+function api(path, opt){
+  opt = opt || {};
+  var h = {'Content-Type':'application/json'};
+  if (S.token) h.Authorization = 'Bearer '+S.token;
+  var o = {method:opt.method||'GET', headers:h}; if (opt.body) o.body = opt.body;
+  return fetch(WORKER+path, o).then(function(r){
+    return r.json().catch(function(){return null;}).then(function(j){
+      if (r.status===401 && S.token){ forceLogout('다시 내 번호를 눌러 주세요'); }
+      return {ok:r.ok, status:r.status, json:j};
+    });
+  }).catch(function(){ return {ok:false, status:0, json:null}; });
+}
+var QK = 'refy_listen_queue';
+function qLoad(){ try{ return JSON.parse(localStorage.getItem(QK)||'[]'); }catch(e){ return []; } }
+function qSave(a){ try{ localStorage.setItem(QK, JSON.stringify(a.slice(-200))); }catch(e){} }
+function qPush(it){
+  var a = qLoad().filter(function(x){
+    if (x.sid!==it.sid || x.k!==it.k) return true;
+    return it.k==='p' ? x.no!==it.no : x.id!==it.id;     // 같은 책 진행은 최신 것만, 같은 로그는 한 번만
+  });
+  a.push(it); qSave(a);
+}
+function sendItem(it){
+  if (it.k==='p') return api('/api/progress/listen/'+it.no, {method:'PUT', body:JSON.stringify(it.body)});
+  return api('/api/log/listen', {method:'POST', body:JSON.stringify(it.body)});
+}
+function qFlush(){
+  if (!S.sid) return Promise.resolve();
+  var a = qLoad(), rest = [], p = Promise.resolve();
+  a.forEach(function(it){
+    if (it.sid!==S.sid){ rest.push(it); return; }
+    p = p.then(function(){ return sendItem(it); }).then(function(r){ if (!r.ok && (r.status===0 || r.status>=500)) rest.push(it); });
+  });
+  return p.then(function(){ qSave(rest); });
+}
+function sendOrQueue(it){
+  return sendItem(it).then(function(r){
+    if (r.ok) { if (qLoad().length) qFlush(); return true; }
+    if (r.status===0 || r.status>=500) qPush(it);
+    return false;
+  });
+}
+
+/* ============================================================
+   키패드
+============================================================ */
+function mkPad(rootSel, len, onDone){
+  var root=$(rootSel), val='';
+  root.innerHTML='<div class="dots"></div><div class="keys"></div><div class="padmsg" role="alert"></div>';
+  var dots=root.querySelector('.dots'), keys=root.querySelector('.keys'), msg=root.querySelector('.padmsg');
+  for (var i=0;i<len;i++) dots.appendChild(document.createElement('i'));
+  function draw(){ var d=dots.children; for (var i=0;i<len;i++){ d[i].textContent = val[i]?'●':''; d[i].className = i===val.length?'on':''; } }
+  function key(label, cls, fn){ var b=document.createElement('button'); b.type='button'; b.textContent=label; if(cls) b.className=cls; b.addEventListener('click', fn); keys.appendChild(b); }
+  '123456789'.split('').forEach(function(n){ key(n,'',function(){ add(n); }); });
+  key('지우기','fn',function(){ val=val.slice(0,-1); msg.textContent=''; draw(); });
+  key('0','',function(){ add('0'); });
+  key('','blank fn',function(){});
+  function add(n){ if (val.length>=len) return; val+=n; msg.textContent=''; msg.className='padmsg'; draw(); if (val.length===len) onDone(val); }
+  draw();
+  return {
+    clear:function(){ val=''; draw(); },
+    msg:function(t,err){ msg.textContent=t||''; msg.className='padmsg'+(err?' err':''); },
+    lock:function(on){ keys.classList.toggle('lock', !!on); }
+  };
+}
+var pads = {};
+
+/* ============================================================
+   기기 안 음원 보관 (IndexedDB)  key = 번호_음원버전
+============================================================ */
+var memCache = {};
+function idb(){
+  return new Promise(function(res,rej){
+    if (!window.indexedDB) return rej(new Error('no idb'));
+    var r=indexedDB.open('refy_listen_audio',1);
+    r.onupgradeneeded=function(){ r.result.createObjectStore('audio'); };
+    r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); };
+  });
+}
+function cacheGet(key){
+  if (memCache[key]) return Promise.resolve(memCache[key]);
+  return idb().then(function(db){ return new Promise(function(res){
+    var q=db.transaction('audio').objectStore('audio').get(key);
+    q.onsuccess=function(){ res(q.result||null); }; q.onerror=function(){ res(null); };
+  }); }).catch(function(){ return null; });
+}
+function cachePut(no, key, blob){
+  memCache[key]=blob;
+  return idb().then(function(db){ return new Promise(function(res){
+    var tx=db.transaction('audio','readwrite'), st=tx.objectStore('audio');
+    st.put(blob,key);
+    var c=st.openKeyCursor();                       // 같은 책의 옛 버전 삭제
+    c.onsuccess=function(){ var cur=c.result; if(!cur) return; if(String(cur.key).indexOf(no+'_')===0 && cur.key!==key) st.delete(cur.key); cur.continue(); };
+    tx.oncomplete=function(){ res(); }; tx.onerror=function(){ res(); };
+  }); }).catch(function(){});
+}
+function download(no, onProgress){
+  return fetch(WORKER+'/audio/'+no+'.mp3', {headers:{Authorization:'Bearer '+S.token}}).then(function(r){
+    if (r.status===401){ forceLogout('다시 내 번호를 눌러 주세요'); throw new Error('auth'); }
+    if (!r.ok) throw new Error('http'+r.status);
+    var total=parseInt(r.headers.get('Content-Length')||'0',10);
+    if (!r.body || !r.body.getReader) return r.blob();
+    var rd=r.body.getReader(), parts=[], got=0;
+    function pump(){ return rd.read().then(function(x){
+      if (x.done) return new Blob(parts,{type:'audio/mpeg'});
+      parts.push(x.value); got+=x.value.length; if (total) onProgress(got/total); return pump();
+    }); }
+    return pump();
+  });
+}
+
+/* ============================================================
+   화면 켜짐 유지
+============================================================ */
+var wl=null;
+function lockScreen(){ try{ if ('wakeLock' in navigator && !wl){ navigator.wakeLock.request('screen').then(function(l){ wl=l; l.addEventListener('release',function(){ wl=null; }); }).catch(function(){}); } }catch(e){} }
+function unlockScreen(){ try{ if (wl) wl.release(); }catch(e){} wl=null; }
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState==='visible'){ if (playing) lockScreen(); }
+  else if (S.run && A) saveProgress(false);
+});
+
+/* ============================================================
+   로그인 / 로그아웃
+============================================================ */
+function forceLogout(msg){ logout(msg); }
+function logout(msg){
+  if (S.run && A && S.screen==='#scrPlay') saveProgress(false);
+  stopAudio(); S.token=''; S.sid=''; S.name=''; S.book=null; S.run=null;
+  $('#who').style.display='none';
+  pads.login.clear(); pads.login.msg(msg||'',!!msg); pads.login.lock(false);
+  pads.book.clear(); pads.book.msg('');
+  show('#scrLogin');
+}
+$('#btnLogout').addEventListener('click', function(){ logout(''); });
+
+function doLogin(num){
+  pads.login.lock(true); pads.login.msg('확인하는 중…');
+  api('/auth',{method:'POST',body:JSON.stringify({number:num})}).then(function(r){
+    pads.login.lock(false);
+    if (!r.ok){
+      pads.login.clear();
+      pads.login.msg(r.status===401?'등록되지 않은 번호예요. 다시 눌러 보세요':r.status===429?'잠시 후에 다시 해 주세요':'인터넷 연결을 확인해 주세요', true);
+      return;
+    }
+    S.token=r.json.token; S.sid=r.json.studentId; S.name=r.json.name||'';
+    $('#whoName').textContent=S.name; $('#who').style.display='flex';
+    try{ if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+    qFlush(); toBookEntry();
+  });
+}
+
+/* ============================================================
+   책 번호 → 확인 → 분기
+============================================================ */
+function toBookEntry(){
+  stopAudio(); S.book=null; S.run=null;
+  $('#hello').textContent = (S.name ? S.name+'님, 안녕하세요!' : '안녕하세요!');
+  pads.book.clear(); pads.book.msg(''); pads.book.lock(false);
+  show('#scrBook');
+}
+function doBook(no){
+  pads.book.lock(true); pads.book.msg('책을 찾는 중…');
+  api('/api/book/'+no).then(function(r){
+    pads.book.lock(false);
+    if (!r.ok){
+      pads.book.clear();
+      pads.book.msg(r.status===404?'등록되지 않은 책 번호예요. 다시 눌러 보세요':'인터넷 연결을 확인해 주세요', true);
+      return;
+    }
+    var b=r.json;
+    if (!b.audio){ pads.book.clear(); pads.book.msg('"'+b.title+'"은(는) 아직 음원이 없어요', true); return; }
+    S.book=b; showConfirm();
+  });
+}
+function paintCover(el, b){
+  el.innerHTML=''; el.style.background = LEVEL_COLOR[b.level] || '#9A8F80';
+  var t=document.createElement('div'); t.className='t'; t.textContent=b.title; el.appendChild(t);
+  var s=document.createElement('div'); s.className='s'; s.textContent=b.stage?('Stage '+b.stage):(b.level||''); el.appendChild(s);
+  if (b.cover){
+    fetch(WORKER+'/cover/'+b.no+'.jpg',{headers:{Authorization:'Bearer '+S.token}}).then(function(r){ return r.ok?r.blob():null; }).then(function(bl){
+      if (!bl || !S.book || S.book.no!==b.no) return;
+      var img=new Image(); img.alt=''; img.onload=function(){ el.innerHTML=''; el.appendChild(img); };
+      img.src=URL.createObjectURL(bl);
+    }).catch(function(){});
+  }
+}
+function tagText(b){ return b.series==='ORT' ? ('ORT · Stage '+b.stage+' · 번호 '+b.no) : ((b.level?b.level+' · ':'')+'번호 '+b.no); }
+function showConfirm(){
+  var b=S.book;
+  paintCover($('#cvConfirm'), b);
+  $('#cfTitle').textContent=b.title; $('#cfTag').textContent=tagText(b);
+  show('#scrConfirm');
+}
+$('#btnNo').addEventListener('click', toBookEntry);
+$('#btnYes').addEventListener('click', function(){
+  var b=S.book, p=b.progress;
+  if (p && p.status==='completed'){
+    $('#rrTitle').textContent=b.title;
+    $('#rrSub').textContent='지금까지 '+(p.completedRuns||1)+'번 읽었어요. 다시 읽을까요?';
+    show('#scrReread'); return;
+  }
+  if (p && p.status==='inProgress' && p.audioVer===b.audioVer && p.lastPosSec>=3){
+    $('#rsTitle').textContent=b.title;
+    $('#rsSub').textContent=fmt(p.lastPosSec)+' 까지 들었어요. 이어서 들을까요?';
+    show('#scrResume'); return;
+  }
+  beginRun({ runNo:p ? (p.status==='inProgress' ? p.runNo : (p.completedRuns||0)+1) : 1,
+             completedRuns:p ? (p.completedRuns||0) : 0, startPos:0, played:0 });
+});
+$('#btnReread').addEventListener('click', function(){
+  var p=S.book.progress;
+  beginRun({ runNo:(p.completedRuns||1)+1, completedRuns:(p.completedRuns||1), startPos:0, played:0 });
+});
+$('#btnContinue').addEventListener('click', function(){
+  var p=S.book.progress;
+  beginRun({ runNo:p.runNo, completedRuns:p.completedRuns||0, startPos:Math.max(0,p.lastPosSec-2), played:p.playedSec||0, startedAt:p.startedAt });
+});
+$('#btnRestart').addEventListener('click', function(){
+  var p=S.book.progress;
+  beginRun({ runNo:p.runNo, completedRuns:p.completedRuns||0, startPos:0, played:0 });
+});
+$('#btnOther1').addEventListener('click', toBookEntry);
+$('#btnOther2').addEventListener('click', toBookEntry);
+$('#btnEnd').addEventListener('click', function(){ logout(''); });
+
+/* ============================================================
+   음원 준비 → 듣기
+============================================================ */
+function beginRun(o){
+  o.startedAt = o.startedAt || Date.now();
+  S.run = o;
+  var b=S.book, key=b.no+'_'+b.audioVer;
+  S.busy=true; $('#prepBar').style.width='0'; $('#prepText').textContent='음원을 준비하고 있어요'; show('#scrPrep');
+  cacheGet(key).then(function(blob){
+    if (blob) return blob;
+    $('#prepText').textContent='음원을 받고 있어요';
+    return download(b.no, function(f){ $('#prepBar').style.width=Math.round(f*100)+'%'; }).then(function(bl){
+      $('#prepBar').style.width='100%'; return cachePut(b.no,key,bl).then(function(){ return bl; });
+    });
+  }).then(function(blob){
+    S.busy=false; setupPlayer(blob);
+  }).catch(function(e){
+    S.busy=false;
+    if (e && e.message==='auth') return;
+    toast(e && e.message==='http404' ? '음원을 찾을 수 없어요. 선생님께 알려 주세요' : '음원을 받지 못했어요. 인터넷을 확인해 주세요', 4500);
+    toBookEntry();
+  });
+}
+function stopAudio(){
+  clearInterval(saveTimer); saveTimer=null; playing=false; unlockScreen();
+  if (A){ try{ A.pause(); }catch(e){} A.removeAttribute('src'); try{ A.load(); }catch(e){} A=null; }
+  if (audioUrl){ URL.revokeObjectURL(audioUrl); audioUrl=''; }
+  document.body.classList.remove('playing'); $('#scrPlay').classList.remove('playing');
+}
+function setupPlayer(blob){
+  stopAudio();
+  var b=S.book;
+  var a=A=new Audio(); a.preload='auto'; audioUrl=URL.createObjectURL(blob); a.src=audioUrl;
+  function mine(fn){ return function(){ if (a===A) fn(); }; }      // 이미 닫은 재생기의 늦은 이벤트는 무시
+  positioned=false; lastT=null;
+  $('#plTitle').textContent=b.title;
+  $('#plTag').textContent = S.run.runNo>1 ? ('다시 읽기 · '+S.run.runNo+'번째') : tagText(b);
+  $('#plBar').style.width='0'; $('#plTime').textContent='0:00 / …'; $('#btnPlay').textContent='▶';
+  $('#plHint').textContent='끝까지 들으면 읽은 책으로 기록돼요';
+  a.addEventListener('loadedmetadata', mine(paintTime));
+  a.addEventListener('timeupdate', mine(onTime));
+  a.addEventListener('play', mine(onPlay));
+  a.addEventListener('pause', mine(onPause));
+  a.addEventListener('ended', mine(onEnded));
+  a.addEventListener('error', mine(function(){ toast('음원을 재생할 수 없어요. 선생님께 알려 주세요',4500); }));
+  show('#scrPlay');
+}
+function paintTime(){
+  if (!A) return;
+  var d=A.duration||0, t=A.currentTime||0;
+  $('#plTime').textContent=fmt(t)+' / '+(d?fmt(d):'…');
+  $('#plBar').style.width=(d?Math.min(100,t/d*100):0)+'%';
+}
+function onTime(){
+  var t=A.currentTime;
+  if (lastT!==null && !A.paused){ var d=t-lastT; if (d>0 && d<1.5) S.run.played+=d; }   // 건너뛰기로는 누적되지 않음
+  lastT=t; paintTime();
+}
+function onPlay(){
+  playing=true; lastT=A.currentTime; lockScreen();
+  $('#scrPlay').classList.add('playing'); $('#btnPlay').textContent='❚❚';
+  clearInterval(saveTimer); saveTimer=setInterval(function(){ saveProgress(false); }, SAVE_EVERY);
+  if (!S.run.saved){ S.run.saved=true; saveProgress(false); }
+}
+function onPause(){
+  if (A && A.ended) return;
+  playing=false; unlockScreen(); clearInterval(saveTimer);
+  $('#scrPlay').classList.remove('playing'); $('#btnPlay').textContent='▶';
+  saveProgress(false);
+}
+$('#btnPlay').addEventListener('click', function(){
+  if (!A) return;
+  if (!A.paused){ A.pause(); return; }
+  if (!positioned){
+    positioned=true;
+    var dur=A.duration||0, pos=S.run.startPos||0;
+    if (dur && pos>dur-2) pos=0;
+    try{ A.currentTime=pos; }catch(e){}
+  }
+  A.play().catch(function(){ toast('재생할 수 없어요. 다시 눌러 보세요'); });
+});
+$('#btnStop').addEventListener('click', function(){
+  if (A && !A.paused) A.pause();
+  saveProgress(false); toBookEntry();
+});
+
+function progressBody(done){
+  var b=S.book, r=S.run;
+  return {
+    status: done?'completed':'inProgress', runNo:r.runNo,
+    completedRuns: done ? r.completedRuns+1 : r.completedRuns,
+    step:'listen', listenDone: !!done, playedSec:Math.round(r.played),
+    lastPosSec: done ? 0 : (A ? Math.round(A.currentTime*10)/10 : 0),
+    audioVer:b.audioVer, startedAt:r.startedAt
+  };
+}
+function saveProgress(done){
+  if (!S.run || !S.book || !S.sid) return Promise.resolve(false);
+  return sendOrQueue({k:'p', sid:S.sid, no:S.book.no, body:progressBody(done)});
+}
+function onEnded(){
+  playing=false; unlockScreen(); clearInterval(saveTimer);
+  $('#scrPlay').classList.remove('playing'); $('#btnPlay').textContent='▶';
+  var dur=A.duration||0;
+  if (S.run.played >= dur*DONE_RATIO) return complete();
+  // 건너뛰어서 끝에 온 경우: 인정하지 않고 처음부터
+  toast('끝까지 잘 듣지 못했어요. 처음부터 다시 들어요',4500);
+  S.run.played=0; S.run.startPos=0; positioned=false; lastT=null;
+  try{ A.currentTime=0; }catch(e){}
+  $('#btnPlay').textContent='▶'; paintTime();
+}
+function complete(){
+  var b=S.book, r=S.run, body=progressBody(true), sid=S.sid;
+  var ev1={eventId:'listen_'+b.no+'_'+r.runNo, type:'listen', bookNo:b.no, runNo:r.runNo, stage:b.stage||0, playedSec:Math.round(r.played), durationSec:Math.round(A.duration||0), completed:true};
+  var ev2={eventId:'run_'+b.no+'_'+r.runNo, type:'run', bookNo:b.no, runNo:r.runNo, stage:b.stage||0, reread:r.runNo>1, rounds:0, listenCompleted:true, followCompleted:false};
+  sendOrQueue({k:'p', sid:sid, no:b.no, body:body});
+  sendOrQueue({k:'l', sid:sid, id:ev1.eventId, body:ev1});
+  sendOrQueue({k:'l', sid:sid, id:ev2.eventId, body:ev2});
+  // 화면의 책 상태도 "읽음"으로 (같은 로그인 중 같은 책을 다시 입력해도 맞게 분기)
+  $('#fnTitle').textContent=b.title;
+  var tag=$('#fnTag'); if (r.runNo>1){ tag.textContent='재독 · '+r.runNo+'번째'; tag.style.display=''; } else tag.style.display='none';
+  stopAudio(); S.run=null; S.book=null;
+  show('#scrFinish');
+}
+
+/* ============================================================
+   자리 비움 자동 로그아웃 (공용 패드 보호)
+============================================================ */
+['touchstart','click','keydown'].forEach(function(ev){ document.addEventListener(ev,function(){ S.lastAct=Date.now(); },true); });
+setInterval(function(){
+  if (!S.token || S.busy || playing) return;
+  if (Date.now()-S.lastAct > IDLE_MS){ if (S.run && A) saveProgress(false); logout('쉬는 동안 처음 화면으로 돌아왔어요'); }
+}, 5000);
+window.addEventListener('online', function(){ qFlush(); });
+
+/* ============================================================
+   시작
+============================================================ */
+pads.login = mkPad('#padLogin', 4, doLogin);
+pads.book  = mkPad('#padBook', 4, doBook);
+show('#scrLogin');
+</script>
+</body>
+</html>
