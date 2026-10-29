@@ -87,7 +87,7 @@
   <!-- 2. ORT 일괄 등록 -->
   <section id="secOrt" class="locked">
     <h2>2. ORT 일괄 등록</h2>
-    <p class="desc">파일 이름이 <b class="mono">1-1_At_School.mp3</b> 형태인 음원을 고르면 번호(<span class="mono">0101</span>)·Stage·제목·색 레벨을 자동으로 정해 표로 보여 줍니다. 제목은 파일 이름 그대로 가져오며 자동으로 고치지 않습니다. 표에서 직접 수정하세요.</p>
+    <p class="desc">파일 이름이 <b class="mono">1-1_At_School.mp3</b> 형태인 음원(Stage 1~9)을 고르면 번호(<span class="mono">0101</span>)·Stage·제목·색 레벨을 자동으로 정해 표로 보여 줍니다. 제목은 파일 이름 그대로 가져오며 자동으로 고치지 않습니다. 표에서 직접 수정하세요.</p>
     <div class="row">
       <button class="ghost" id="btnPickFiles">파일 여러 개 선택</button>
       <button class="ghost" id="btnPickDir">폴더 선택</button>
@@ -112,9 +112,42 @@
     </div>
   </section>
 
-  <!-- 3. 표지 -->
+  <!-- 3. 시리즈·일반 원서 -->
+  <section id="secSeries" class="locked">
+    <h2>3. 시리즈·일반 원서 일괄 등록</h2>
+    <p class="desc">ORT가 아닌 책의 음원을 먼저 올리고, 책 번호는 자동으로 받습니다. 파일 이름이 <b class="mono">1-Dinosaurs Before Dark.mp3</b>처럼 권 번호가 앞에 있어도, <b class="mono">Big Lunch.mp3</b>처럼 제목만 있어도 됩니다. 번호는 도서 관리자와 같은 규칙(레벨 색 첫 자리 + 이어지는 번호)으로 붙고, 이미 같은 제목이 책 목록에 있으면 그 번호에 음원만 붙입니다.</p>
+    <div class="row">
+      <button class="ghost" id="btnSerFiles">파일 여러 개 선택</button>
+      <button class="ghost" id="btnSerDir">폴더 선택</button>
+      <input type="file" id="inSerFiles" accept=".mp3,audio/mpeg" multiple hidden>
+      <input type="file" id="inSerDir" webkitdirectory multiple hidden>
+      <span style="display:flex;align-items:center;gap:6px;"><label class="f" style="margin:0;">기본 레벨</label>
+        <select id="serLevel"><option value="">선택하세요</option>
+          <option value="Pink">핑크</option><option value="Red">빨강</option><option value="Orange">주황</option><option value="Yellow">노랑</option>
+          <option value="Green">초록</option><option value="Blue">파랑</option><option value="Purple">보라</option></select></span>
+      <label style="font-size:12.5px;color:var(--sub);"><input type="checkbox" id="serStrip" checked> 파일 이름 앞의 숫자는 권 번호로 보고 제목에서 뺍니다</label>
+      <span id="serSummary" class="mini"></span>
+    </div>
+    <div id="serBody" style="display:none;">
+      <div class="grid2" id="serStats" style="margin-top:12px;"></div>
+      <div class="scroll" style="margin-top:10px;"><table class="tbl" id="serTable"><thead><tr>
+        <th style="width:34px;"><input type="checkbox" id="serChkAll" title="전체 선택/해제"></th>
+        <th>파일</th><th>권</th><th>번호</th><th style="min-width:240px;">제목 (수정 가능)</th><th>레벨</th><th>상태</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="pri" id="btnSerStart">등록 시작</button>
+        <button class="ghost" id="btnSerRetry" style="display:none;">실패한 항목만 다시 시도</button>
+        <button class="ghost" id="btnSerCsv" disabled>이번에 등록한 번호표 내려받기</button>
+        <span id="serRunMsg" class="mini"></span>
+      </div>
+      <div class="bar" id="serBarWrap" style="display:none;"><i id="serBar"></i></div>
+      <div class="note">체크를 바꾸면 번호가 이어서 다시 계산됩니다. 번호는 [등록 시작]을 누를 때 확정됩니다. 기존 번호·제목은 절대 덮어쓰지 않습니다.</div>
+    </div>
+  </section>
+
+  <!-- 4. 표지 -->
   <section id="secCover" class="locked">
-    <h2>3. 표지 올리기 (선택)</h2>
+    <h2>4. 표지 올리기 (선택)</h2>
     <p class="desc">파일 이름을 <b class="mono">0101.jpg</b>처럼 책 번호로 만들어 올립니다. 가로 600px 안팎으로 자동 축소되어 올라갑니다. 책 목록에 먼저 등록된 번호만 올릴 수 있습니다. 표지가 없는 책은 학생 화면에서 색 카드로 보입니다.</p>
     <div class="row">
       <button class="ghost" id="btnPickCover">표지 파일 선택</button>
@@ -124,9 +157,9 @@
     <div id="coverList" class="note"></div>
   </section>
 
-  <!-- 4. 기존 원서 -->
+  <!-- 5. 기존 원서 -->
   <section id="secBook" class="locked">
-    <h2>4. 기존 원서 음원 올리기 (번호 지정)</h2>
+    <h2>5. 기존 원서 음원 올리기 (번호 지정)</h2>
     <p class="desc">이미 책 목록에 있는 원서(예: 1001~)에 음원을 붙입니다. 번호를 넣고 조회한 뒤 MP3 파일을 고르세요.</p>
     <div class="row">
       <div><label class="f">책 번호 4자리</label><input type="text" id="bkNo" maxlength="4" inputmode="numeric" class="mono" style="width:110px;"></div>
@@ -142,13 +175,14 @@
     <div id="bkMsg" class="msg"></div>
   </section>
 
-  <!-- 5. 현황·백업 -->
+  <!-- 6. 현황·백업 -->
   <section id="secStat" class="locked">
-    <h2>5. 보관 현황 · 백업</h2>
+    <h2>6. 보관 현황 · 백업</h2>
     <p class="desc">클라우드 저장소와 책 목록이 서로 맞는지 점검하고, 책 목록·문장 구간을 파일로 내려받아 백업합니다. 월 1회 내려받아 보관하길 권장합니다. 원본 음원 폴더도 다른 곳에 한 벌 더 보관하세요.</p>
     <div class="row">
       <button class="ghost" id="btnStat">현황 점검</button>
       <button class="ghost" id="btnExport">책 목록·구간 백업 내려받기</button>
+      <button class="ghost" id="btnCsvAll">전체 번호표(CSV) 내려받기</button>
     </div>
     <div id="statOut" style="margin-top:12px;"></div>
   </section>
@@ -162,7 +196,7 @@ var FIREBASE = 'https://hakwoncheck-default-rtdb.firebaseio.com';   // 읽기 �
 var LS_BASE = 'refy_worker_base';
 var MIN_BYTES = 10 * 1024, MAX_BYTES = 60 * 1024 * 1024;
 var KNOWN_SUSPECT = ['isee','goeilla','yhe','moutain','the what sit','under grand adventure','hey!presto'];
-var LEVEL_OF_STAGE = {1:'Pink',2:'Pink',3:'Pink',4:'Red',5:'Red'};
+var LEVEL_OF_STAGE = {1:'Pink',2:'Pink',3:'Pink',4:'Red',5:'Red',6:'Orange',7:'Orange',8:'Orange',9:'Orange'};
 
 /* ============================================================
    도우미
@@ -209,7 +243,7 @@ function fbGet(path){
 /* ============================================================
    1. 연결
 ============================================================ */
-var SEC_LOCK = ['#secOrt','#secCover','#secBook','#secStat'];
+var SEC_LOCK = ['#secOrt','#secSeries','#secCover','#secBook','#secStat'];
 function setLocked(on){ SEC_LOCK.forEach(function(s){ $(s).classList.toggle('locked', on); }); }
 function lockAll(msg){
   token=''; setLocked(true);
@@ -268,7 +302,7 @@ function makeRow(file){
   var p = parseName(file.name);
   if (!p){ r.errors.push('파일 이름을 읽을 수 없음 (예: 1-1_At_School.mp3)'); r.include=false; r._off=true; return r; }
   r.stage=p.stage; r.seq=p.seq; r.title=p.title;
-  if (p.stage<1 || p.stage>5){ r.errors.push('Stage 범위 밖 (1~5만 가능)'); }
+  if (p.stage<1 || p.stage>9){ r.errors.push('Stage 범위 밖 (1~9만 가능)'); }
   else if (p.seq<1 || p.seq>99){ r.errors.push('번호 범위 밖 (1~99)'); }
   else { r.no='0'+p.stage+pad2(p.seq); r.level=LEVEL_OF_STAGE[p.stage]; }
   if (file.size<MIN_BYTES || file.size>MAX_BYTES) r.errors.push('파일 크기 이상 ('+Math.round(file.size/1024)+'KB)');
@@ -508,8 +542,260 @@ $('#btnRetry').onclick=function(){
   runQueue(list);
 };
 
+
 /* ============================================================
-   3. 표지
+   3. 시리즈·일반 원서 일괄 등록  (번호 = 레벨 색 첫 자리 + 이어지는 3자리, 도서 관리자와 같은 규칙)
+============================================================ */
+var LEVEL_PREFIX = {Pink:1,Red:2,Orange:3,Yellow:4,Green:5,Blue:6,Purple:8};
+var LEVEL_KO = {Pink:'핑크',Red:'빨강',Orange:'주황',Yellow:'노랑',Green:'초록',Blue:'파랑',Purple:'보라'};
+var serRows = [], serRunning = false, serSeq = 0;
+
+function pad3(n){ return ('00'+n).slice(-3); }
+function normKey(t){ return String(t||'').toLowerCase().replace(/[^a-z0-9가-힣]/g,''); }
+function serParse(file){
+  var base = file.name.replace(/\.mp3$/i,'').replace(/_/g,' ').replace(/\s+/g,' ').trim(), vol=null, title=base;
+  if ($('#serStrip').checked){
+    var m = /^(\d{1,3})\s*(?:[-.)\]]\s*|\s+)(.+)$/.exec(base);
+    if (m){ vol = parseInt(m[1],10); title = m[2].trim(); }
+  }
+  return {vol:vol, title:title};
+}
+function serSuggest(t){
+  var x = t.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\s+/g,' ').trim();
+  x = x.charAt(0).toUpperCase()+x.slice(1);
+  return x!==t ? x : '';
+}
+function serMake(file){
+  var p = serParse(file);
+  var r = {id:++serSeq, file:file, name:file.name, vol:p.vol, title:p.title, level:'', levelSet:false, no:'', errors:[], warns:[], suggest:'',
+           match:null, action:'new', include:true, _off:false, state:'', stateMsg:''};
+  return r;
+}
+function serNatural(a,b){
+  if (a.vol!==null && b.vol!==null && a.vol!==b.vol) return a.vol-b.vol;
+  if ((a.vol!==null) !== (b.vol!==null)) return a.vol!==null ? -1 : 1;
+  return a.name.localeCompare(b.name,'en',{numeric:true,sensitivity:'base'});
+}
+function serEvaluate(){
+  var defLevel = $('#serLevel').value;
+  var byKey = {}; Object.keys(dbBooks).forEach(function(no){ var k=normKey(dbBooks[no].title); if(k && !byKey[k]) byKey[k]=no; });
+  var batchKey = {};
+  serRows.forEach(function(r){ var k=normKey(r.title); if(k) (batchKey[k]=batchKey[k]||[]).push(r); });
+  serRows.sort(serNatural);
+  serRows.forEach(function(r){
+    if (r.state==='ok') return;
+    r.errors=[]; r.warns=[];
+    if (!r.levelSet) r.level = defLevel;
+    var t = r.title;
+    if (r.file.size<MIN_BYTES || r.file.size>MAX_BYTES) r.errors.push('파일 크기 이상 ('+Math.round(r.file.size/1024)+'KB)');
+    if (!String(t).trim()) r.errors.push('제목이 비어 있음');
+    if (t){
+      if (/^[a-z]/.test(t)) r.warns.push('소문자로 시작');
+      if (/[a-z][A-Z]/.test(t)) r.warns.push('단어가 붙어 있음');
+      if (/[0-9]/.test(t)) r.warns.push('숫자 포함');
+      else if (/[^A-Za-z\s'’\-,.?!&:]/.test(t)) r.warns.push('특수문자 포함');
+      if (batchKey[normKey(t)] && batchKey[normKey(t)].length>1) r.warns.push('같은 제목 파일이 여러 개');
+    }
+    r.suggest = serSuggest(t);
+    var mno = byKey[normKey(t)];
+    r.match = mno ? {no:mno, book:dbBooks[mno]} : null;
+    if (r.match){
+      if (r.action==='new' && !r._forceNew) r.action = (r.match.book.audio && r2Audio[mno]) ? 'skip' : 'attach';
+    } else { r.action='new'; r._forceNew=false; }
+    if (r.errors.length){ r.include=false; r._off=true; }
+    else if (r._off){ r.include=true; r._off=false; }
+  });
+  // 번호 배정: 새 책으로 등록될 줄만, 레벨별로 현재 최대 번호 다음부터 이어서
+  var used = {}; Object.keys(dbBooks).forEach(function(k){ used[k]=1; }); Object.keys(r2Audio).forEach(function(k){ used[k]=1; });
+  var max = {};
+  Object.keys(used).forEach(function(k){ var d=k.charAt(0), n=parseInt(k.slice(1),10); if(/[1-8]/.test(d) && !isNaN(n) && n>(max[d]||0)) max[d]=n; });
+  serRows.forEach(function(r){
+    if (r.state==='ok') return;
+    r.no='';
+    if (r.match && r.action==='attach'){ r.no=r.match.no; return; }
+    var isNew = !r.match || r.action==='new' && r._forceNew;
+    if (!(isNew && r.include && !r.errors.length)) return;
+    if (!r.level){ r.errors.push('레벨을 선택하세요'); r.include=false; r._off=true; return; }
+    var d = String(LEVEL_PREFIX[r.level]);
+    var n = (max[d]||0)+1;
+    if (n>999){ r.errors.push('이 레벨은 번호 한도(999)를 넘었어요'); r.include=false; r._off=true; return; }
+    max[d]=n; r.no = d+pad3(n);
+  });
+}
+function serWillDo(r){ return r.state!=='ok' && r.include && !r.errors.length && !(r.match && r.action==='skip' && !r._forceNew); }
+function serKind(r){ if (r.state==='ok') return 'done'; if (r.state==='fail'||r.errors.length) return 'err'; if (r.warns.length) return 'warn'; return 'okrow'; }
+function serStatus(r){
+  if (r.state==='ok') return '<span class="chip ok">완료</span> <span class="mini">'+esc(r.stateMsg)+'</span>';
+  if (r.state==='fail') return '<span class="chip bad">실패</span> <span class="mini">'+esc(r.stateMsg)+'</span>';
+  if (r.state==='busy') return '<span class="chip info">진행 중…</span>';
+  var h='';
+  if (r.errors.length) h += '<span class="chip bad">오류</span>'+r.errors.map(function(e){return '<span class="flag bad">'+esc(e)+'</span>';}).join('');
+  else if (r.match){
+    h += '<span class="chip warn">같은 제목 있음 · 번호 '+esc(r.match.no)+'</span> <select data-sact="'+r.id+'" style="font-size:12px;padding:3px 6px;">'+
+      '<option value="attach"'+(r.action==='attach'?' selected':'')+'>그 번호에 음원 붙이기</option>'+
+      '<option value="new"'+(r._forceNew?' selected':'')+'>새 책으로 따로 등록</option>'+
+      '<option value="skip"'+(r.action==='skip'&&!r._forceNew?' selected':'')+'>건너뜀</option></select>';
+  } else h += '<span class="chip info">새 책</span>';
+  h += r.warns.map(function(w){return '<span class="flag">⚠ '+esc(w)+'</span>';}).join('');
+  if (r.suggest && !r.errors.length && r.state!=='ok') h += '<button class="ghost" data-sug="'+r.id+'" style="padding:2px 8px;font-size:11.5px;margin-top:3px;">제안: '+esc(r.suggest)+' (적용)</button>';
+  return h;
+}
+function serLevelSel(r){
+  var opts='<option value="">선택</option>'+Object.keys(LEVEL_PREFIX).map(function(l){ return '<option value="'+l+'"'+(r.level===l?' selected':'')+'>'+LEVEL_KO[l]+'</option>'; }).join('');
+  return '<select data-slv="'+r.id+'" style="font-size:12px;padding:3px 6px;"'+(r.state==='ok'||(r.match&&r.action==='attach'&&!r._forceNew)?' disabled':'')+'>'+opts+'</select>';
+}
+function serRender(){
+  var h=[];
+  serRows.forEach(function(r){
+    h.push('<tr data-srow="'+r.id+'" class="'+serKind(r)+'">'+
+      '<td><input type="checkbox" data-sinc="'+r.id+'"'+(serWillDo(r)?' checked':'')+((r.errors.length||r.state==='ok'||serRunning)?' disabled':'')+'></td>'+
+      '<td class="fn" title="'+esc(r.name)+'">'+esc(r.name)+'</td>'+
+      '<td class="mono">'+(r.vol===null?'-':r.vol)+'</td>'+
+      '<td class="mono"><b>'+esc(r.no||'-')+'</b></td>'+
+      '<td><input type="text" data-stitle="'+r.id+'" value="'+esc(r.title)+'"'+(r.state==='ok'||serRunning?' disabled':'')+'></td>'+
+      '<td>'+serLevelSel(r)+'</td><td>'+serStatus(r)+'</td></tr>');
+  });
+  $('#serTable tbody').innerHTML=h.join(''); serStats();
+}
+function serRefresh(){
+  serRows.forEach(function(r){
+    var tr=$('#serTable tbody tr[data-srow="'+r.id+'"]'); if(!tr) return;
+    tr.className=serKind(r);
+    var c=tr.querySelector('input[data-sinc]'); c.checked=serWillDo(r); c.disabled=!!(r.errors.length||r.state==='ok'||serRunning);
+    tr.children[3].innerHTML='<b>'+esc(r.no||'-')+'</b>';
+    var ti=tr.querySelector('input[data-stitle]'); if (document.activeElement!==ti) ti.value=r.title;
+    tr.children[5].innerHTML=serLevelSel(r); tr.children[6].innerHTML=serStatus(r);
+  });
+  serStats();
+}
+function serFind(id){ id=parseInt(id,10); for(var i=0;i<serRows.length;i++) if(serRows[i].id===id) return serRows[i]; return null; }
+function serStats(){
+  var c={total:serRows.length,nw:0,att:0,skip:0,err:0,warn:0,done:0,fail:0};
+  serRows.forEach(function(r){
+    if (r.state==='ok'){c.done++;return;} if (r.state==='fail') c.fail++;
+    if (r.errors.length){c.err++;return;} if (r.warns.length) c.warn++;
+    if (!serWillDo(r)){c.skip++;return;}
+    if (r.match && r.action==='attach') c.att++; else c.nw++;
+  });
+  $('#serStats').innerHTML=
+    '<div class="stat"><b>'+c.total+'</b><span>선택한 파일</span></div>'+
+    '<div class="stat"><b style="color:var(--info)">'+c.nw+'</b><span>새 번호로 등록할 책</span></div>'+
+    '<div class="stat"><b style="color:var(--warn)">'+c.att+'</b><span>기존 책에 음원 붙임</span></div>'+
+    '<div class="stat"><b>'+c.skip+'</b><span>건너뜀</span></div>'+
+    '<div class="stat"><b style="color:var(--bad)">'+c.err+'</b><span>오류(올라가지 않음)</span></div>'+
+    '<div class="stat"><b style="color:var(--warn)">'+c.warn+'</b><span>제목 확인 필요</span></div>'+
+    (c.done||c.fail?'<div class="stat"><b style="color:var(--ok)">'+c.done+'</b><span>완료 / 실패 '+c.fail+'</span></div>':'');
+  $('#btnSerStart').disabled = serRunning || (c.nw+c.att)===0;
+  $('#btnSerRetry').style.display=(c.fail>0&&!serRunning)?'':'none';
+  $('#btnSerCsv').disabled = c.done===0;
+}
+function serFull(){ serEvaluate(); serRender(); }
+
+$('#btnSerFiles').onclick=function(){ $('#inSerFiles').click(); };
+$('#btnSerDir').onclick=function(){ $('#inSerDir').click(); };
+$('#inSerFiles').onchange=function(){ serLoad(this.files); this.value=''; };
+$('#inSerDir').onchange=function(){ serLoad(this.files); this.value=''; };
+function serLoad(list){
+  var files=Array.prototype.slice.call(list||[]).filter(function(f){ return /\.mp3$/i.test(f.name); });
+  if (!files.length){ $('#serSummary').textContent='MP3 파일이 없습니다.'; return; }
+  $('#serSummary').textContent='책 목록과 저장소를 확인하는 중…';
+  Promise.all([ fbGet('booklibrary'), api('/admin/list') ]).then(function(res){
+    var lib=res[0]||{}; dbBooks={}; Object.keys(lib).forEach(function(k){ if(lib[k]&&lib[k].title) dbBooks[k]=lib[k]; });
+    if (!res[1].ok){ $('#serSummary').textContent='저장소 목록을 읽지 못했습니다: '+errText(res[1]); return; }
+    r2Audio={}; (res[1].json.audio||[]).forEach(function(a){ r2Audio[a.no]=true; });
+    serRows=files.map(serMake); $('#serBody').style.display='';
+    $('#serSummary').textContent=files.length+'개 파일을 분석했습니다. 기본 레벨을 고르고 표를 확인하세요.';
+    serFull();
+  }).catch(function(){ $('#serSummary').textContent='책 목록을 읽지 못했습니다. 인터넷을 확인하세요.'; });
+}
+$('#serLevel').onchange=function(){ if (serRows.length) serFull(); };
+$('#serStrip').onchange=function(){ serRows.forEach(function(r){ if(r.state==='ok') return; var p=serParse(r.file); r.vol=p.vol; r.title=p.title; }); if (serRows.length) serFull(); };
+$('#serChkAll').onchange=function(){ var on=this.checked; serRows.forEach(function(r){ if(r.errors.length||r.state==='ok') return; r.include=on; if(r.match){ r.action=on?(r.action==='skip'?'attach':r.action):'skip'; } }); serFull(); };
+$('#serTable').addEventListener('change',function(e){
+  var t=e.target,id,r;
+  if ((id=t.getAttribute('data-sinc'))){ r=serFind(id); r.include=t.checked; if(r.match){ if(t.checked&&r.action==='skip') r.action='attach'; if(!t.checked) r.action='skip'; } serFull(); }
+  if ((id=t.getAttribute('data-sact'))){ r=serFind(id); if(t.value==='new'){ r._forceNew=true; r.action='new'; r.include=true; } else { r._forceNew=false; r.action=t.value; r.include=(t.value!=='skip'); } serFull(); }
+  if ((id=t.getAttribute('data-slv'))){ r=serFind(id); r.level=t.value; r.levelSet=true; serFull(); }
+});
+$('#serTable').addEventListener('input',function(e){ var id=e.target.getAttribute('data-stitle'); if(!id) return; var r=serFind(id); if(r) r.title=e.target.value; });
+$('#serTable').addEventListener('focusout',function(e){
+  var id=e.target.getAttribute&&e.target.getAttribute('data-stitle'); if(!id) return;
+  var r=serFind(id); if(r){ r.title=r.title.replace(/\s+/g,' ').trim(); e.target.value=r.title; serEvaluate(); serRefresh(); }
+});
+$('#serTable').addEventListener('click',function(e){
+  var id=e.target.getAttribute&&e.target.getAttribute('data-sug'); if(!id) return;
+  var r=serFind(id); if(r){ r.title=r.suggest; serEvaluate(); serRefresh(); }
+});
+
+function serTargets(retryOnly){
+  return serRows.filter(function(r){
+    if (r.errors.length||r.state==='ok') return false;
+    if (retryOnly) return r.state==='fail';
+    return serWillDo(r);
+  });
+}
+function serProcess(r){
+  r.state='busy'; r.stateMsg='';
+  var attach = r.match && r.action==='attach' && !r._forceNew;
+  return putFile('audio', r.no, r.file, r.name).then(function(up){
+    if (!up.ok){ r.state='fail'; r.stateMsg='업로드 실패: '+errText(up); return; }
+    if (attach){ r.state='ok'; r.stateMsg='번호 '+r.no+'에 음원 붙임'; r2Audio[r.no]=true; return; }
+    return api('/admin/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:[{no:r.no,title:r.title,level:r.level,audioVer:up.json.audioVer}]})}).then(function(rg){
+      var st = rg.ok && rg.json.results && rg.json.results[0] && rg.json.results[0].status;
+      if (st==='created'){ r.state='ok'; r.stateMsg='번호 '+r.no+' 등록됨'; r2Audio[r.no]=true; dbBooks[r.no]={title:r.title,level:r.level,audio:true}; }
+      else if (st==='exists'){ r.state='fail'; r.stateMsg='번호 '+r.no+'를 다른 곳에서 먼저 썼어요 — 파일을 다시 선택해 주세요'; }
+      else { r.state='fail'; r.stateMsg='음원은 올렸지만 책 목록 등록 실패: '+(rg.ok?st:errText(rg)); }
+    });
+  });
+}
+function serRun(list){
+  serRunning=true; serRender();
+  var total=list.length, done=0, idx=0, fatal=false;
+  $('#serBarWrap').style.display=''; $('#serBar').style.width='0';
+  function bump(){ done++; $('#serBar').style.width=(done/total*100)+'%'; $('#serRunMsg').textContent=done+' / '+total+' 처리됨'; if(done%5===0||done===total) serRefresh(); }
+  function worker(){ if(fatal||idx>=total) return Promise.resolve(); var r=list[idx++]; return serProcess(r).then(function(){ if(!token) fatal=true; bump(); return worker(); }); }
+  // 번호는 순서대로 이어지므로 새 책은 한 줄씩(동시 처리 안 함), 단순 음원 붙이기만 함께 처리
+  return Promise.all([worker(),worker(),worker()]).then(function(){
+    serRunning=false; serRender();
+    var c=0,f=0; serRows.forEach(function(r){ if(r.state==='ok')c++; else if(r.state==='fail')f++; });
+    $('#serRunMsg').textContent='끝났습니다. 완료 '+c+' · 실패 '+f+(fatal?' (로그인 만료로 중단됨)':'');
+  });
+}
+$('#btnSerStart').onclick=function(){
+  serEvaluate(); serRefresh();
+  var list=serTargets(false), nw=list.filter(function(r){return !(r.match&&r.action==='attach');}).length, att=list.length-nw;
+  var warn=list.filter(function(r){return r.warns.length;}).length;
+  var msg='새 번호로 등록할 책 '+nw+'권(번호가 책 목록에 새로 만들어집니다), 기존 책에 음원만 붙일 책 '+att+'권입니다.';
+  if (warn) msg+='\n\n제목 확인 필요 표시가 있는 책이 '+warn+'권 있습니다. 제목을 확인하셨나요?';
+  msg+='\n\n진행할까요?';
+  if (!confirm(msg)) return;
+  serRun(list);
+};
+$('#btnSerRetry').onclick=function(){ var l=serTargets(true); l.forEach(function(r){ r.state=''; }); serRun(l); };
+
+/* ---- 번호표(CSV): 책에 번호를 붙일 때 쓰는 목록 ---- */
+function downloadCsv(lines, name){
+  var csv='﻿'+lines.map(function(a){ return a.map(function(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }).join(','); }).join('\r\n');
+  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+}
+function stamp(){ var d=new Date(); return d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate()); }
+$('#btnSerCsv').onclick=function(){
+  var lines=[['번호','제목','레벨','파일 이름']];
+  serRows.filter(function(r){return r.state==='ok';}).sort(function(a,b){return a.no.localeCompare(b.no);}).forEach(function(r){ lines.push([r.no, r.match&&r.action==='attach'?r.match.book.title:r.title, r.level||(r.match&&r.match.book.level)||'', r.name]); });
+  downloadCsv(lines,'번호표_'+stamp()+'.csv');
+};
+$('#btnCsvAll').onclick=function(){
+  Promise.all([fbGet('booklibrary'),api('/admin/list')]).then(function(res){
+    var lib=res[0]||{}, au={}; if(res[1].ok) (res[1].json.audio||[]).forEach(function(a){au[a.no]=1;});
+    var lines=[['번호','제목','레벨','음원']];
+    Object.keys(lib).filter(function(k){return lib[k]&&lib[k].title;}).sort().forEach(function(k){ lines.push([k,lib[k].title,lib[k].level||'',au[k]?'있음':'없음']); });
+    downloadCsv(lines,'전체번호표_'+stamp()+'.csv');
+  }).catch(function(){ $('#statOut').textContent='책 목록을 읽지 못했습니다.'; });
+};
+
+/* ============================================================
+   4. 표지
 ============================================================ */
 var covers = [];   // {file, no, error}
 $('#btnPickCover').onclick=function(){ $('#inCover').click(); };
@@ -556,7 +842,7 @@ $('#btnCoverGo').onclick=function(){
 };
 
 /* ============================================================
-   4. 기존 원서 음원
+   5. 기존 원서 음원
 ============================================================ */
 var bk = {no:'', title:'', file:null};
 $('#btnBkFind').onclick=function(){

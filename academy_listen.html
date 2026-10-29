@@ -180,7 +180,7 @@
 var WORKER = window.__WORKER || 'https://academy-audio-worker.woojuin0125.workers.dev';
 var IDLE_MS = window.__IDLE_MS || 150000;     // 듣지 않고 2분 30초 가만히 있으면 처음 화면으로
 var SAVE_EVERY = window.__SAVE_EVERY || 20000; // 듣는 중 진행 저장 간격
-var DONE_RATIO = 0.9;                         // 실제로 90% 이상 들으면 "들었다" (끝나는 음악 전에 나가도 인정)
+var DONE_RATIO = 8/9;                         // 실제로 8/9(약 89%) 이상 들으면 "들었다" — 끝 1/9 남기고 나가도 인정 (아이들에게는 표시하지 않음)
 var LEVEL_COLOR = {Pink:'#FF6FA0',Red:'#D62839',Orange:'#F77F3E',Yellow:'#EFB700',Green:'#2E9E63',Blue:'#3D7BC1',Purple:'#8354B4'};
 
 function $(s){ return document.querySelector(s); }
@@ -554,7 +554,7 @@ function onEnded(){
   try{ A.currentTime=0; }catch(e){}
   setPlayIcon(false); paintTime();
 }
-/* "다 들음" 기록: 90%에 도달하는 순간 한 번만 저장 (끝나는 음악 전에 나가도 기록됨) */
+/* "다 들음" 기록: 8/9(약 89%)에 도달하는 순간 한 번만 저장 (끝나는 음악 전에 나가도 기록됨) */
 function markDone(){
   var b=S.book, r=S.run; if (!r || r.done) return;
   r.done=true; clearInterval(saveTimer); saveTimer=null;
@@ -564,8 +564,7 @@ function markDone(){
   sendOrQueue({k:'p', sid:sid, no:b.no, body:progressBody(true)});
   sendOrQueue({k:'l', sid:sid, id:ev1.eventId, body:ev1});
   sendOrQueue({k:'l', sid:sid, id:ev2.eventId, body:ev2});
-  $('#plHint').textContent='다 들었어요! 끝내기를 눌러도 돼요';
-  var st=$('#btnStop'); st.textContent='끝내기'; st.className='linkbtn done';
+  // 화면에는 아무 표시도 하지 않음 (아이들이 알 수 없게). 기록만 조용히 저장.
 }
 function showFinish(){
   var b=S.book, r=S.run; if (!b || !r) return;
