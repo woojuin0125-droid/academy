@@ -145,10 +145,38 @@
     </div>
   </section>
 
-  <!-- 4. 표지 -->
+  <!-- 4. 챕터북 -->
+  <section id="secChap" class="locked">
+    <h2>4. 챕터북 등록 (챕터별 음원)</h2>
+    <p class="desc">책 한 권이 챕터 파일 여러 개로 나뉘어 있을 때 씁니다. <b>책 제목 폴더</b>를 고르면(여러 권이 들어 있는 상위 폴더도 가능) 폴더 하나를 책 한 권으로 보고, 파일 이름의 숫자 순서대로 챕터 1, 2, 3…이 됩니다. 제목은 폴더 이름에서 가져옵니다. 책 번호는 한 권에 하나이고 챕터는 그 안의 순서입니다. 음원이 파일 하나인 책은 위 3번을 쓰세요.</p>
+    <div class="row">
+      <button class="ghost" id="btnChapDir">책 폴더 선택</button>
+      <input type="file" id="inChapDir" webkitdirectory multiple hidden>
+      <span style="display:flex;align-items:center;gap:6px;"><label class="f" style="margin:0;">기본 레벨</label>
+        <select id="chapLevel"><option value="">선택하세요</option>
+          <option value="Pink">핑크</option><option value="Red">빨강</option><option value="Orange">주황</option><option value="Yellow">노랑</option>
+          <option value="Green">초록</option><option value="Blue">파랑</option><option value="Purple">보라</option></select></span>
+      <span id="chapSummary" class="mini"></span>
+    </div>
+    <div id="chapBody" style="display:none;">
+      <div class="scroll" style="margin-top:12px;"><table class="tbl" id="chapTable"><thead><tr>
+        <th style="width:34px;"></th><th>폴더</th><th>챕터</th><th>번호</th><th style="min-width:220px;">제목 (수정 가능)</th><th>레벨</th><th>상태</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="pri" id="btnChapStart">등록 시작</button>
+        <button class="ghost" id="btnChapRetry" style="display:none;">실패한 책만 다시 시도</button>
+        <button class="ghost" id="btnChapCsv" disabled>이번에 등록한 번호표 내려받기</button>
+        <span id="chapRunMsg" class="mini"></span>
+      </div>
+      <div class="bar" id="chapBarWrap" style="display:none;"><i id="chapBar"></i></div>
+      <div class="note">챕터 파일 하나는 60MB 이하여야 합니다. 같은 제목의 책이 이미 있으면 그 번호에 챕터를 올립니다(기존 음원 대신 챕터로 재생). 번호는 [등록 시작]을 누를 때 확정되고 기존 번호·제목은 덮어쓰지 않습니다.</div>
+    </div>
+  </section>
+
+  <!-- 5. 표지 -->
   <section id="secCover" class="locked">
-    <h2>4. 표지 올리기 (선택)</h2>
-    <p class="desc">파일 이름을 <b class="mono">0101.jpg</b>처럼 책 번호로 만들어 올립니다. 가로 600px 안팎으로 자동 축소되어 올라갑니다. 책 목록에 먼저 등록된 번호만 올릴 수 있습니다. 표지가 없는 책은 학생 화면에서 색 카드로 보입니다.</p>
+    <h2>5. 표지 올리기 (선택)</h2>
+    <p class="desc">파일 이름을 바꾸지 않아도 됩니다. 파일 이름이 <b>책 제목</b>(예: <span class="mono">Dinosaurs Before Dark.jpg</span>, <span class="mono">1-Dinosaurs Before Dark.jpg</span>)이거나 <b>책 번호</b>(<span class="mono">0101.jpg</span>)이면 책 목록에서 자동으로 짝을 찾습니다. 못 찾은 사진은 번호를 직접 입력할 수 있습니다. 가로 600px 안팎으로 자동 축소되어 올라가며, 표지가 없는 책은 학생 화면에서 색 카드로 보입니다. 책 목록에 먼저 등록된 책만 올릴 수 있습니다.</p>
     <div class="row">
       <button class="ghost" id="btnPickCover">표지 파일 선택</button>
       <input type="file" id="inCover" accept="image/*" multiple hidden>
@@ -159,7 +187,7 @@
 
   <!-- 5. 기존 원서 -->
   <section id="secBook" class="locked">
-    <h2>5. 기존 원서 음원 올리기 (번호 지정)</h2>
+    <h2>6. 기존 원서 음원 올리기 (번호 지정)</h2>
     <p class="desc">이미 책 목록에 있는 원서(예: 1001~)에 음원을 붙입니다. 번호를 넣고 조회한 뒤 MP3 파일을 고르세요.</p>
     <div class="row">
       <div><label class="f">책 번호 4자리</label><input type="text" id="bkNo" maxlength="4" inputmode="numeric" class="mono" style="width:110px;"></div>
@@ -177,7 +205,7 @@
 
   <!-- 6. 현황·백업 -->
   <section id="secStat" class="locked">
-    <h2>6. 보관 현황 · 백업</h2>
+    <h2>7. 보관 현황 · 백업</h2>
     <p class="desc">클라우드 저장소와 책 목록이 서로 맞는지 점검하고, 책 목록·문장 구간을 파일로 내려받아 백업합니다. 월 1회 내려받아 보관하길 권장합니다. 원본 음원 폴더도 다른 곳에 한 벌 더 보관하세요.</p>
     <div class="row">
       <button class="ghost" id="btnStat">현황 점검</button>
@@ -243,7 +271,7 @@ function fbGet(path){
 /* ============================================================
    1. 연결
 ============================================================ */
-var SEC_LOCK = ['#secOrt','#secSeries','#secCover','#secBook','#secStat'];
+var SEC_LOCK = ['#secOrt','#secSeries','#secChap','#secCover','#secBook','#secStat'];
 function setLocked(on){ SEC_LOCK.forEach(function(s){ $(s).classList.toggle('locked', on); }); }
 function lockAll(msg){
   token=''; setLocked(true);
@@ -567,9 +595,18 @@ function serSuggest(t){
 }
 function serMake(file){
   var p = serParse(file);
-  var r = {id:++serSeq, file:file, name:file.name, vol:p.vol, title:p.title, level:'', levelSet:false, no:'', errors:[], warns:[], suggest:'',
+  var r = {id:++serSeq, file:file, name:file.name, folder:folderName(relDir(file)), chapHint:false, _userOn:false, vol:p.vol, title:p.title, level:'', levelSet:false, no:'', errors:[], warns:[], suggest:'',
            match:null, action:'new', include:true, _off:false, state:'', stateMsg:''};
   return r;
+}
+/* 같은 폴더에 3개 이상이고, 이름에서 숫자를 뺀 부분이 모두 같거나 비어 있으면 챕터 파일로 보고 기본 해제 */
+function serMarkChapterFolders(rows){
+  var by={}; rows.forEach(function(r){ var d=relDir(r.file); if(d) (by[d]=by[d]||[]).push(r); });
+  Object.keys(by).forEach(function(d){
+    var g=by[d]; if (g.length<3) return;
+    var keys={}; g.forEach(function(r){ keys[r.name.replace(/\.mp3$/i,'').replace(/[^A-Za-z\uAC00-\uD7A3]/g,'').toLowerCase()]=1; });
+    if (Object.keys(keys).length===1) g.forEach(function(r){ r.chapHint=true; });
+  });
 }
 function serNatural(a,b){
   if (a.vol!==null && b.vol!==null && a.vol!==b.vol) return a.vol-b.vol;
@@ -604,6 +641,7 @@ function serEvaluate(){
     } else { r.action='new'; r._forceNew=false; }
     if (r.errors.length){ r.include=false; r._off=true; }
     else if (r._off){ r.include=true; r._off=false; }
+    if (r.chapHint){ r.warns.push('챕터북 폴더로 보임 — 챕터북 등록(4번)에서 올리세요'); if (!r._userOn) r.include=false; }
   });
   // 번호 배정: 새 책으로 등록될 줄만, 레벨별로 현재 최대 번호 다음부터 이어서
   var used = {}; Object.keys(dbBooks).forEach(function(k){ used[k]=1; }); Object.keys(r2Audio).forEach(function(k){ used[k]=1; });
@@ -649,7 +687,7 @@ function serRender(){
   serRows.forEach(function(r){
     h.push('<tr data-srow="'+r.id+'" class="'+serKind(r)+'">'+
       '<td><input type="checkbox" data-sinc="'+r.id+'"'+(serWillDo(r)?' checked':'')+((r.errors.length||r.state==='ok'||serRunning)?' disabled':'')+'></td>'+
-      '<td class="fn" title="'+esc(r.name)+'">'+esc(r.name)+'</td>'+
+      '<td class="fn" title="'+esc(r.name)+'">'+(r.folder?'<span class="mini" style="display:block;">'+esc(r.folder)+'/</span>':'')+esc(r.name)+'</td>'+
       '<td class="mono">'+(r.vol===null?'-':r.vol)+'</td>'+
       '<td class="mono"><b>'+esc(r.no||'-')+'</b></td>'+
       '<td><input type="text" data-stitle="'+r.id+'" value="'+esc(r.title)+'"'+(r.state==='ok'||serRunning?' disabled':'')+'></td>'+
@@ -703,17 +741,17 @@ function serLoad(list){
     var lib=res[0]||{}; dbBooks={}; Object.keys(lib).forEach(function(k){ if(lib[k]&&lib[k].title) dbBooks[k]=lib[k]; });
     if (!res[1].ok){ $('#serSummary').textContent='저장소 목록을 읽지 못했습니다: '+errText(res[1]); return; }
     r2Audio={}; (res[1].json.audio||[]).forEach(function(a){ r2Audio[a.no]=true; });
-    serRows=files.map(serMake); $('#serBody').style.display='';
+    serRows=files.map(serMake); serMarkChapterFolders(serRows); $('#serBody').style.display='';
     $('#serSummary').textContent=files.length+'개 파일을 분석했습니다. 기본 레벨을 고르고 표를 확인하세요.';
     serFull();
   }).catch(function(){ $('#serSummary').textContent='책 목록을 읽지 못했습니다. 인터넷을 확인하세요.'; });
 }
 $('#serLevel').onchange=function(){ if (serRows.length) serFull(); };
 $('#serStrip').onchange=function(){ serRows.forEach(function(r){ if(r.state==='ok') return; var p=serParse(r.file); r.vol=p.vol; r.title=p.title; }); if (serRows.length) serFull(); };
-$('#serChkAll').onchange=function(){ var on=this.checked; serRows.forEach(function(r){ if(r.errors.length||r.state==='ok') return; r.include=on; if(r.match){ r.action=on?(r.action==='skip'?'attach':r.action):'skip'; } }); serFull(); };
+$('#serChkAll').onchange=function(){ var on=this.checked; serRows.forEach(function(r){ if(r.errors.length||r.state==='ok') return; r.include=on; r._userOn=on; if(r.match){ r.action=on?(r.action==='skip'?'attach':r.action):'skip'; } }); serFull(); };
 $('#serTable').addEventListener('change',function(e){
   var t=e.target,id,r;
-  if ((id=t.getAttribute('data-sinc'))){ r=serFind(id); r.include=t.checked; if(r.match){ if(t.checked&&r.action==='skip') r.action='attach'; if(!t.checked) r.action='skip'; } serFull(); }
+  if ((id=t.getAttribute('data-sinc'))){ r=serFind(id); r.include=t.checked; r._userOn=t.checked; if(r.match){ if(t.checked&&r.action==='skip') r.action='attach'; if(!t.checked) r.action='skip'; } serFull(); }
   if ((id=t.getAttribute('data-sact'))){ r=serFind(id); if(t.value==='new'){ r._forceNew=true; r.action='new'; r.include=true; } else { r._forceNew=false; r.action=t.value; r.include=(t.value!=='skip'); } serFull(); }
   if ((id=t.getAttribute('data-slv'))){ r=serFind(id); r.level=t.value; r.levelSet=true; serFull(); }
 });
@@ -780,11 +818,7 @@ function downloadCsv(lines, name){
   a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
 }
 function stamp(){ var d=new Date(); return d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate()); }
-$('#btnSerCsv').onclick=function(){
-  var lines=[['번호','제목','레벨','파일 이름']];
-  serRows.filter(function(r){return r.state==='ok';}).sort(function(a,b){return a.no.localeCompare(b.no);}).forEach(function(r){ lines.push([r.no, r.match&&r.action==='attach'?r.match.book.title:r.title, r.level||(r.match&&r.match.book.level)||'', r.name]); });
-  downloadCsv(lines,'번호표_'+stamp()+'.csv');
-};
+$('#btnSerCsv').onclick=function(){ csvThisTime(); };
 $('#btnCsvAll').onclick=function(){
   Promise.all([fbGet('booklibrary'),api('/admin/list')]).then(function(res){
     var lib=res[0]||{}, au={}; if(res[1].ok) (res[1].json.audio||[]).forEach(function(a){au[a.no]=1;});
@@ -795,32 +829,256 @@ $('#btnCsvAll').onclick=function(){
 };
 
 /* ============================================================
+   4. 챕터북 등록 — 폴더 1개 = 책 1권, 파일 이름 숫자 순서 = 챕터 순서
+============================================================ */
+var chapBooks = [], chapRunning = false, chapSeq = 0;
+function relDir(f){ var p=f.webkitRelativePath||''; var a=p.split('/'); return a.length>=2 ? a.slice(0,-1).join('/') : ''; }
+function folderName(dir){ var a=dir.split('/'); return a[a.length-1]||''; }
+function chapNatural(a,b){ return a.name.localeCompare(b.name,'en',{numeric:true,sensitivity:'base'}); }
+function chapGroup(files){
+  var by={}; files.forEach(function(f){ var d=relDir(f); (by[d]=by[d]||[]).push(f); });
+  var dirs=Object.keys(by), hasSub=dirs.some(function(d){ return d.indexOf('/')>=0; });
+  var topDir = dirs.length ? dirs.slice().sort(function(a,b){return a.length-b.length;})[0].split('/')[0] : '';
+  return dirs.filter(function(d){ return !(hasSub && d===topDir); }).sort(function(a,b){ return a.localeCompare(b,'en',{numeric:true,sensitivity:'base'}); }).map(function(d){
+    var list=by[d].slice().sort(chapNatural);
+    return {id:++chapSeq, dir:d, folder:folderName(d), files:list, title:folderName(d).replace(/_/g,' ').replace(/\s+/g,' ').trim(),
+            level:'', levelSet:false, no:'', errors:[], warns:[], match:null, action:'new', _forceNew:false, include:true, state:'', stateMsg:'', prog:0};
+  });
+}
+function chapEvaluate(){
+  var defLevel=$('#chapLevel').value;
+  var byKey={}; Object.keys(dbBooks).forEach(function(no){ var k=normKey(dbBooks[no].title); if(k&&!byKey[k]) byKey[k]=no; });
+  var cnt={}; chapBooks.forEach(function(b){ var k=normKey(b.title); if(k) cnt[k]=(cnt[k]||0)+1; });
+  chapBooks.forEach(function(b){
+    if (b.state==='ok') return;
+    b.errors=[]; b.warns=[];
+    if (!b.levelSet) b.level=defLevel;
+    var n=b.files.length;
+    if (n<2) b.errors.push('파일이 1개뿐 — 위 3번(시리즈·일반 원서)에서 올리세요');
+    if (n>99) b.errors.push('챕터는 최대 99개');
+    var bad=b.files.filter(function(f){ return f.size<MIN_BYTES||f.size>MAX_BYTES; });
+    if (bad.length) b.errors.push('크기 이상 파일 '+bad.length+'개 ('+bad[0].name+' '+Math.round(bad[0].size/1048576*10)/10+'MB, 허용 10KB~60MB)');
+    if (!String(b.title).trim()) b.errors.push('제목이 비어 있음');
+    if (b.title){
+      if (/^[a-z]/.test(b.title)) b.warns.push('소문자로 시작');
+      if (/[a-z][A-Z]/.test(b.title)) b.warns.push('단어가 붙어 있음');
+      if (cnt[normKey(b.title)]>1) b.warns.push('같은 제목 폴더가 여러 개');
+    }
+    var mno=byKey[normKey(b.title)]; b.match=mno?{no:mno,book:dbBooks[mno]}:null;
+    if (b.match){ if(!b._forceNew && b.action==='new') b.action='attach'; } else { b.action='new'; b._forceNew=false; }
+    if (b.errors.length) b.include=false; else if (b._off){ b.include=true; b._off=false; }
+    if (b.errors.length) b._off=true;
+  });
+  var used={}; Object.keys(dbBooks).forEach(function(k){ used[k]=1; }); Object.keys(r2Audio).forEach(function(k){ used[k]=1; });
+  var max={}; Object.keys(used).forEach(function(k){ var d=k.charAt(0), n=parseInt(k.slice(1),10); if(/[1-8]/.test(d)&&!isNaN(n)&&n>(max[d]||0)) max[d]=n; });
+  chapBooks.forEach(function(b){
+    if (b.state==='ok') return;
+    b.no='';
+    if (b.match && b.action==='attach' && !b._forceNew){ b.no=b.match.no; return; }
+    if (!(b.include && !b.errors.length)) return;
+    if (!b.level){ b.errors.push('레벨을 선택하세요'); b.include=false; b._off=true; return; }
+    var d=String(LEVEL_PREFIX[b.level]), n=(max[d]||0)+1;
+    if (n>999){ b.errors.push('이 레벨은 번호 한도(999)를 넘었어요'); b.include=false; b._off=true; return; }
+    max[d]=n; b.no=d+pad3(n);
+  });
+}
+function chapWill(b){ return b.state!=='ok' && b.include && !b.errors.length && b.action!=='skip'; }
+function chapStatus(b){
+  if (b.state==='ok') return '<span class="chip ok">완료</span> <span class="mini">'+esc(b.stateMsg)+'</span>';
+  if (b.state==='busy') return '<span class="chip info">올리는 중 '+b.prog+'/'+b.files.length+'</span>';
+  var h='';
+  if (b.state==='fail') h+='<span class="chip bad">실패</span> <span class="mini">'+esc(b.stateMsg)+'</span> ';
+  if (b.errors.length) h+='<span class="chip bad">오류</span>'+b.errors.map(function(e){return '<span class="flag bad">'+esc(e)+'</span>';}).join('');
+  else if (b.match){
+    h+='<span class="chip warn">같은 제목 있음 · 번호 '+esc(b.match.no)+'</span> <select data-cact="'+b.id+'" style="font-size:12px;padding:3px 6px;">'+
+      '<option value="attach"'+(b.action==='attach'&&!b._forceNew?' selected':'')+'>그 번호에 챕터 올리기</option>'+
+      '<option value="new"'+(b._forceNew?' selected':'')+'>새 책으로 따로 등록</option>'+
+      '<option value="skip"'+(b.action==='skip'?' selected':'')+'>건너뜀</option></select>';
+  } else h+='<span class="chip info">새 책</span>';
+  h+=b.warns.map(function(w){return '<span class="flag">⚠ '+esc(w)+'</span>';}).join('');
+  return h;
+}
+function chapLevelSel(b){
+  var opts='<option value="">선택</option>'+Object.keys(LEVEL_PREFIX).map(function(l){ return '<option value="'+l+'"'+(b.level===l?' selected':'')+'>'+LEVEL_KO[l]+'</option>'; }).join('');
+  return '<select data-clv="'+b.id+'" style="font-size:12px;padding:3px 6px;"'+(b.state==='ok'||(b.match&&b.action==='attach'&&!b._forceNew)?' disabled':'')+'>'+opts+'</select>';
+}
+function chapFilesDetail(b){
+  var names=b.files.map(function(f,i){ return (i+1)+'. '+f.name; });
+  return '<details><summary>'+b.files.length+'개</summary><div class="mini" style="max-height:140px;overflow:auto;white-space:nowrap;">'+names.map(esc).join('<br>')+'</div></details>';
+}
+function chapKind(b){ return b.state==='ok'?'done':(b.state==='fail'||b.errors.length)?'err':b.warns.length?'warn':'okrow'; }
+function chapStats(){
+  var nw=0,att=0,err=0,done=0,fail=0;
+  chapBooks.forEach(function(b){ if(b.state==='ok'){done++;return;} if(b.state==='fail')fail++; if(b.errors.length){err++;return;} if(!chapWill(b))return; if(b.match&&b.action==='attach'&&!b._forceNew)att++; else nw++; });
+  $('#btnChapStart').disabled=chapRunning||(nw+att)===0;
+  $('#btnChapRetry').style.display=(fail>0&&!chapRunning)?'':'none';
+  $('#btnChapCsv').disabled=!(done||serRows.some(function(r){return r.state==='ok';}));
+  $('#chapSummary').textContent=chapBooks.length+'권 · 새 책 '+nw+' · 기존 책에 올림 '+att+(err?' · 오류 '+err:'')+(done?' · 완료 '+done:'');
+}
+function chapRender(){
+  var h=[];
+  chapBooks.forEach(function(b){
+    h.push('<tr data-crow="'+b.id+'" class="'+chapKind(b)+'"><td><input type="checkbox" data-cinc="'+b.id+'"'+(chapWill(b)?' checked':'')+((b.errors.length||b.state==='ok'||chapRunning)?' disabled':'')+'></td>'+
+      '<td class="fn" title="'+esc(b.dir)+'">'+esc(b.folder)+'</td><td>'+chapFilesDetail(b)+'</td><td class="mono"><b>'+esc(b.no||'-')+'</b></td>'+
+      '<td><input type="text" data-ctitle="'+b.id+'" value="'+esc(b.title)+'"'+(b.state==='ok'||chapRunning?' disabled':'')+'></td><td>'+chapLevelSel(b)+'</td><td>'+chapStatus(b)+'</td></tr>');
+  });
+  $('#chapTable tbody').innerHTML=h.join(''); chapStats();
+}
+function chapRefresh(){
+  chapBooks.forEach(function(b){
+    var tr=$('#chapTable tbody tr[data-crow="'+b.id+'"]'); if(!tr) return;
+    tr.className=chapKind(b);
+    var c=tr.querySelector('input[data-cinc]'); c.checked=chapWill(b); c.disabled=!!(b.errors.length||b.state==='ok'||chapRunning);
+    tr.children[3].innerHTML='<b>'+esc(b.no||'-')+'</b>';
+    var ti=tr.querySelector('input[data-ctitle]'); if(document.activeElement!==ti) ti.value=b.title; ti.disabled=(b.state==='ok'||chapRunning);
+    tr.children[5].innerHTML=chapLevelSel(b); tr.children[6].innerHTML=chapStatus(b);
+  });
+  chapStats();
+}
+function chapFind(id){ id=parseInt(id,10); for(var i=0;i<chapBooks.length;i++) if(chapBooks[i].id===id) return chapBooks[i]; return null; }
+function chapFull(){ chapEvaluate(); chapRender(); }
+
+$('#btnChapDir').onclick=function(){ $('#inChapDir').click(); };
+$('#inChapDir').onchange=function(){ chapLoad(this.files); this.value=''; };
+function chapLoad(list){
+  var files=Array.prototype.slice.call(list||[]).filter(function(f){ return /\.mp3$/i.test(f.name); });
+  if (!files.length){ $('#chapSummary').textContent='MP3 파일이 없습니다.'; return; }
+  $('#chapSummary').textContent='책 목록과 저장소를 확인하는 중…';
+  Promise.all([fbGet('booklibrary'),api('/admin/list')]).then(function(res){
+    var lib=res[0]||{}; dbBooks={}; Object.keys(lib).forEach(function(k){ if(lib[k]&&lib[k].title) dbBooks[k]=lib[k]; });
+    if (!res[1].ok){ $('#chapSummary').textContent='저장소 목록을 읽지 못했습니다: '+errText(res[1]); return; }
+    r2Audio={}; r2Chap={}; (res[1].json.audio||[]).forEach(function(a){ r2Audio[a.no]=true; if(a.ch) r2Chap[a.no]=Math.max(r2Chap[a.no]||0,a.ch); });
+    chapBooks=chapGroup(files); $('#chapBody').style.display=''; chapFull();
+  }).catch(function(){ $('#chapSummary').textContent='책 목록을 읽지 못했습니다. 인터넷을 확인하세요.'; });
+}
+var r2Chap = {};
+$('#chapLevel').onchange=function(){ if(chapBooks.length) chapFull(); };
+$('#chapTable').addEventListener('change',function(e){
+  var t=e.target,id,b;
+  if((id=t.getAttribute('data-cinc'))){ b=chapFind(id); b.include=t.checked; if(b.match){ b.action=t.checked?(b.action==='skip'?'attach':b.action):'skip'; } chapFull(); }
+  if((id=t.getAttribute('data-cact'))){ b=chapFind(id); if(t.value==='new'){ b._forceNew=true; b.action='new'; b.include=true; } else { b._forceNew=false; b.action=t.value; b.include=(t.value!=='skip'); } chapFull(); }
+  if((id=t.getAttribute('data-clv'))){ b=chapFind(id); b.level=t.value; b.levelSet=true; chapFull(); }
+});
+$('#chapTable').addEventListener('input',function(e){ var id=e.target.getAttribute('data-ctitle'); if(!id) return; var b=chapFind(id); if(b) b.title=e.target.value; });
+$('#chapTable').addEventListener('focusout',function(e){ var id=e.target.getAttribute&&e.target.getAttribute('data-ctitle'); if(!id) return; var b=chapFind(id); if(b){ b.title=b.title.replace(/\s+/g,' ').trim(); e.target.value=b.title; chapEvaluate(); chapRefresh(); } });
+
+/* 챕터 올리기: 책 한 권씩, 챕터는 3개까지 동시에 → 모두 성공하면 책 목록에 chapters 기록 */
+function chapProcess(b){
+  b.state='busy'; b.stateMsg=''; b.prog=0; chapRefresh();
+  var attach=b.match&&b.action==='attach'&&!b._forceNew, n=b.files.length, idx=0, failed=null, ver=0;
+  function one(){
+    if (failed || idx>=n) return Promise.resolve();
+    var i=idx++, f=b.files[i];
+    return putFile('audio', b.no+'/'+(i+1), f, f.name).then(function(up){
+      if (!up.ok){ failed='챕터 '+(i+1)+' 업로드 실패: '+errText(up); return; }
+      if (up.json.audioVer>ver) ver=up.json.audioVer; b.prog++; chapRefresh();
+    }).then(one);
+  }
+  return Promise.all([one(),one(),one()]).then(function(){
+    if (failed){ b.state='fail'; b.stateMsg=failed; return; }
+    var after;
+    if (attach) after=api('/admin/chapters',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({no:b.no,chapters:n,audioVer:ver})}).then(function(r){ return r.ok?'ok':errText(r); });
+    else after=api('/admin/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:[{no:b.no,title:b.title,level:b.level,audioVer:ver,chapters:n}]})}).then(function(rg){
+      var st=rg.ok&&rg.json.results&&rg.json.results[0]&&rg.json.results[0].status;
+      return st==='created'?'ok':st==='exists'?'번호 '+b.no+'를 다른 곳에서 먼저 썼어요 — 파일을 다시 선택해 주세요':'책 목록 등록 실패: '+(rg.ok?st:errText(rg));
+    });
+    return after.then(function(res){
+      if (res!=='ok'){ b.state='fail'; b.stateMsg='음원은 올렸지만 '+res; return; }
+      // 이전에 챕터가 더 많았다면 남은 파일 정리
+      var old=Math.max(r2Chap[b.no]||0, attach?(parseInt(b.match.book.chapters,10)||0):0), p=Promise.resolve();
+      for (var c=n+1;c<=old;c++){ (function(c){ p=p.then(function(){ return api('/admin/audio/'+b.no+'/'+c,{method:'DELETE'}); }); })(c); }
+      return p.then(function(){
+        b.state='ok'; b.stateMsg='번호 '+b.no+' · 챕터 '+n+'개'; r2Audio[b.no]=true; r2Chap[b.no]=n;
+        dbBooks[b.no]={title:attach?b.match.book.title:b.title,level:attach?(b.match.book.level||''):b.level,audio:true,chapters:n};
+      });
+    });
+  }).catch(function(){ b.state='fail'; b.stateMsg='네트워크 오류'; });
+}
+function chapRun(list){
+  chapRunning=true; chapRender();
+  var total=list.length, done=0, i=0;
+  $('#chapBarWrap').style.display=''; $('#chapBar').style.width='0';
+  function next(){
+    if (i>=total || !token) return Promise.resolve();
+    var b=list[i++];
+    return chapProcess(b).then(function(){ done++; $('#chapBar').style.width=(done/total*100)+'%'; $('#chapRunMsg').textContent=done+' / '+total+'권 처리됨'; chapRefresh(); return next(); });
+  }
+  return next().then(function(){
+    chapRunning=false; chapRender();
+    var c=0,f=0; chapBooks.forEach(function(b){ if(b.state==='ok')c++; else if(b.state==='fail')f++; });
+    $('#chapRunMsg').textContent='끝났습니다. 완료 '+c+' · 실패 '+f+(!token?' (로그인 만료로 중단됨)':'');
+  });
+}
+$('#btnChapStart').onclick=function(){
+  chapEvaluate(); chapRefresh();
+  var list=chapBooks.filter(chapWill), att=list.filter(function(b){return b.match&&b.action==='attach'&&!b._forceNew;}).length, nw=list.length-att;
+  var chs=list.reduce(function(a,b){return a+b.files.length;},0), warn=list.filter(function(b){return b.warns.length;}).length;
+  var msg='새 번호로 등록할 책 '+nw+'권, 기존 책에 챕터를 올릴 책 '+att+'권 (챕터 파일 총 '+chs+'개)입니다.';
+  if (warn) msg+='\n\n제목 확인 필요 표시가 있는 책이 '+warn+'권 있습니다. 제목을 확인하셨나요?';
+  if (!confirm(msg+'\n\n진행할까요?')) return;
+  chapRun(list);
+};
+$('#btnChapRetry').onclick=function(){ var l=chapBooks.filter(function(b){return b.state==='fail'&&!b.errors.length;}); l.forEach(function(b){b.state='';}); chapRun(l); };
+$('#btnChapCsv').onclick=function(){ csvThisTime(); };
+function csvThisTime(){
+  var lines=[['번호','제목','레벨','파일(또는 폴더)']];
+  serRows.filter(function(r){return r.state==='ok';}).forEach(function(r){ lines.push([r.no, r.match&&r.action==='attach'?r.match.book.title:r.title, r.level||(r.match&&r.match.book.level)||'', r.name]); });
+  chapBooks.filter(function(b){return b.state==='ok';}).forEach(function(b){ lines.push([b.no, b.match&&b.action==='attach'&&!b._forceNew?b.match.book.title:b.title, b.level||(b.match&&b.match.book.level)||'', b.folder+' (챕터 '+b.files.length+'개)']); });
+  lines=[lines[0]].concat(lines.slice(1).sort(function(a,b){return String(a[0]).localeCompare(String(b[0]));}));
+  downloadCsv(lines,'번호표_'+stamp()+'.csv');
+}
+
+/* ============================================================
    4. 표지
 ============================================================ */
-var covers = [];   // {file, no, error}
+var covers = [];   // {file, no, title, error, state, manual}
 $('#btnPickCover').onclick=function(){ $('#inCover').click(); };
+var coverLib = {};
+function coverBase(name){ return name.replace(/\.(jpe?g|png|webp|gif|heic)$/i,'').replace(/_/g,' ').replace(/\s+/g,' ').trim(); }
+function coverMatch(c){
+  c.error=''; c.title=''; c.warn='';
+  var base=coverBase(c.file.name), m=/^(\d{4})$/.exec(base);
+  if (c.manual){ c.no=c.manual; }
+  else if (m){ c.no=m[1]; }
+  else {
+    var keys=[normKey(base), normKey(base.replace(/^\d{1,3}\s*[-.)]\s*/,'')), normKey(base.replace(/^\d+\s*[-_]\s*\d+\s*/,''))].filter(Boolean);
+    var hit=[]; Object.keys(coverLib).forEach(function(no){ var k=normKey(coverLib[no].title); if (keys.indexOf(k)>=0) hit.push(no); });
+    if (hit.length===1) c.no=hit[0];
+    else { c.no=''; c.error = hit.length>1 ? '같은 제목 책이 여러 권 ('+hit.join(', ')+') — 번호를 입력하세요' : '짝을 찾지 못했습니다 — 번호를 입력하세요'; }
+  }
+  if (c.no && !c.error){
+    if (!(coverLib[c.no]&&coverLib[c.no].title)) c.error='책 목록에 없는 번호입니다 ('+c.no+')';
+    else { c.title=coverLib[c.no].title; if (coverLib[c.no].cover) c.warn='이미 표지가 있어 교체됩니다'; }
+  }
+}
+function coverDupes(){
+  var cnt={}; covers.forEach(function(c){ if(!c.error&&c.no) cnt[c.no]=(cnt[c.no]||0)+1; });
+  covers.forEach(function(c){ if(!c.error&&c.no&&cnt[c.no]>1&&c.state!=='ok'){ c.error='같은 책('+c.no+')에 사진이 '+cnt[c.no]+'장 — 하나만 남기세요'; } });
+}
 $('#inCover').onchange=function(){
-  var files=Array.prototype.slice.call(this.files||[]); this.value='';
+  var files=Array.prototype.slice.call(this.files||[]).filter(function(f){ return /\.(jpe?g|png|webp)$/i.test(f.name); }); this.value='';
+  if (!files.length){ $('#coverList').textContent='JPG/PNG/WEBP 사진이 없습니다.'; return; }
   $('#coverList').textContent='확인 중…';
   fbGet('booklibrary').then(function(lib){
-    lib=lib||{};
-    covers=files.map(function(f){
-      var m=/^(\d{4})\.(jpe?g|png|webp)$/i.exec(f.name), c={file:f,no:m?m[1]:'',error:'',state:''};
-      if(!m) c.error='파일 이름이 번호 4자리여야 합니다 (예: 0101.jpg)';
-      else if(!(lib[c.no]&&lib[c.no].title)) c.error='책 목록에 없는 번호입니다';
-      else c.title=lib[c.no].title;
-      return c;
-    });
-    renderCovers();
+    coverLib={}; lib=lib||{}; Object.keys(lib).forEach(function(k){ if(lib[k]&&lib[k].title) coverLib[k]=lib[k]; });
+    covers=files.map(function(f){ return {file:f,no:'',error:'',state:'',manual:''}; });
+    covers.sort(function(a,b){ return a.file.name.localeCompare(b.file.name,'en',{numeric:true,sensitivity:'base'}); });
+    coverRefresh();
   }).catch(function(){ $('#coverList').textContent='책 목록을 읽지 못했습니다.'; });
 };
+function coverRefresh(){ covers.forEach(function(c){ if(c.state!=='ok') coverMatch(c); }); coverDupes(); renderCovers(); }
 function renderCovers(){
-  var ok=covers.filter(function(c){return !c.error;}).length;
-  $('#coverList').innerHTML = covers.length ? ('<ul class="plain">'+covers.map(function(c){
-    return '<li><span class="mono">'+esc(c.file.name)+'</span> '+(c.error?'<span class="chip bad">'+esc(c.error)+'</span>':'→ '+esc(c.title)+' '+(c.state==='ok'?'<span class="chip ok">완료</span>':c.state?'<span class="chip bad">'+esc(c.state)+'</span>':''))+'</li>';
-  }).join('')+'</ul>') : '';
+  var ok=covers.filter(function(c){return !c.error&&c.state!=='ok';}).length, bad=covers.filter(function(c){return c.error;}).length, done=covers.filter(function(c){return c.state==='ok';}).length;
+  $('#coverList').innerHTML = covers.length ? ('<p class="mini">올릴 수 있는 사진 <b>'+ok+'</b>장 · 확인 필요 <b>'+bad+'</b>장'+(done?' · 완료 <b>'+done+'</b>장':'')+'</p><div class="scroll" style="max-height:380px;"><table class="tbl"><thead><tr><th>사진</th><th>번호</th><th>책 제목</th><th>상태</th></tr></thead><tbody>'+covers.map(function(c,i){
+    var st = c.state==='ok' ? '<span class="chip ok">완료</span>' : c.state ? '<span class="chip bad">'+esc(c.state)+'</span>' : c.error ? '<span class="chip bad">'+esc(c.error)+'</span> <input type="text" data-cman="'+i+'" maxlength="4" placeholder="번호 4자리" inputmode="numeric" style="width:90px;font-size:12px;padding:3px 6px;">' : (c.warn?'<span class="chip warn">'+esc(c.warn)+'</span>':'<span class="chip info">올릴 준비됨</span>');
+    return '<tr class="'+(c.error||(c.state&&c.state!=='ok')?'err':c.state==='ok'?'done':'okrow')+'"><td class="fn" title="'+esc(c.file.name)+'">'+esc(c.file.name)+'</td><td class="mono"><b>'+esc(c.no||'-')+'</b></td><td>'+esc(c.title||'')+'</td><td>'+st+'</td></tr>';
+  }).join('')+'</tbody></table></div>') : '';
   $('#btnCoverGo').disabled = !ok;
 }
+$('#coverList').addEventListener('change',function(e){
+  var i=e.target.getAttribute&&e.target.getAttribute('data-cman'); if(i===null||i===undefined) return;
+  var v=String(e.target.value||'').replace(/\D/g,''); if(v.length===4){ covers[+i].manual=v; coverRefresh(); } else if(v){ e.target.value=v; }
+});
 function shrink(file){
   return createImageBitmap(file).then(function(bmp){
     var w=Math.min(600,bmp.width), h=Math.round(bmp.height*w/bmp.width);
@@ -831,11 +1089,11 @@ function shrink(file){
 }
 $('#btnCoverGo').onclick=function(){
   var list=covers.filter(function(c){return !c.error && c.state!=='ok';});
-  this.disabled=true;
+  this.disabled=true; list.forEach(function(c){ c.state=''; });
   var p=Promise.resolve();
   list.forEach(function(c){ p=p.then(function(){
     return shrink(c.file).then(function(blob){ return putFile('cover',c.no,blob,c.file.name); })
-      .then(function(r){ c.state = r.ok ? 'ok' : errText(r); renderCovers(); })
+      .then(function(r){ c.state = r.ok ? 'ok' : errText(r); if(r.ok&&coverLib[c.no]) coverLib[c.no].cover=true; renderCovers(); })
       .catch(function(){ c.state='이미지를 읽지 못함'; renderCovers(); });
   }); });
   p.then(renderCovers);

@@ -67,6 +67,13 @@
   .linkbtn.done{background:var(--green); color:#fff; border-radius:14px; padding:14px 30px; font-size:16px; font-weight:700;}
   .linkbtn.done:active{background:var(--green-deep); color:#fff;}
 
+  /* 챕터 */
+  .chlist{width:min(440px,90vw); display:flex; flex-direction:column; gap:8px; max-height:50vh; overflow:auto; padding:2px;}
+  .chitem{display:flex; align-items:center; justify-content:space-between; font:inherit; font-size:17px; font-weight:700; border:0; border-radius:14px; padding:15px 18px; background:var(--soft); color:var(--ink); cursor:pointer; text-align:left;}
+  .chitem:active{background:var(--soft2);}
+  .chitem .st{font-size:13px; font-weight:500; color:var(--sub);}
+  .chitem.done{background:#E7F3EF;} .chitem.done .st{color:var(--green); font-weight:700;}
+
   /* 받는 중 */
   .spin{width:40px; height:40px; border-radius:50%; border:4px solid var(--soft2); border-top-color:var(--green); animation:spin .9s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
@@ -139,6 +146,24 @@
     </div>
   </section>
 
+  <!-- 4c. 챕터 고르기 (챕터북) -->
+  <section class="screen" id="scrChapters">
+    <div class="head"><p class="booktitle" id="chTitle"></p><p class="sub">몇 장을 들을까요?</p></div>
+    <div class="chlist" id="chList"></div>
+    <button class="linkbtn" id="btnChOther">다른 책 읽기</button>
+  </section>
+
+  <!-- 4d. 챕터 하나 끝 -->
+  <section class="screen" id="scrChapEnd">
+    <div class="okmark"><svg viewBox="0 0 24 24" width="38" height="38" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <div class="head"><h1 id="ceHead"></h1><p class="booktitle" id="ceTitle"></p></div>
+    <div class="btns">
+      <button class="btn" id="btnNextCh">다음 챕터 듣기</button>
+      <button class="btn alt" id="btnChList">챕터 목록</button>
+    </div>
+    <button class="linkbtn" id="btnChStop">끝내기</button>
+  </section>
+
   <!-- 5. 음원 받기 -->
   <section class="screen" id="scrPrep">
     <div class="spin" aria-hidden="true"></div>
@@ -195,7 +220,7 @@ function toast(t,ms){ var el=$('#toast'); el.textContent=t; el.classList.add('on
 /* ============================================================
    상태
 ============================================================ */
-var S = { token:'', sid:'', name:'', book:null, run:null, screen:'', busy:false, lastAct:Date.now() };
+var S = { token:'', sid:'', name:'', book:null, run:null, cp:null, nextCh:0, screen:'', busy:false, lastAct:Date.now() };
 var ICON_PLAY='<svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path fill="currentColor" d="M8.5 5.6v12.8a1 1 0 0 0 1.5.86l10.2-6.4a1 1 0 0 0 0-1.72L10 4.74a1 1 0 0 0-1.5.86z"/></svg>';
 var ICON_PAUSE='<svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.3" fill="currentColor"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.3" fill="currentColor"/></svg>';
 function setPlayIcon(isPlaying){ var b=$('#btnPlay'); b.innerHTML=isPlaying?ICON_PAUSE:ICON_PLAY; b.dataset.state=isPlaying?'pause':'play'; b.setAttribute('aria-label',isPlaying?'일시정지':'재생'); }
@@ -298,18 +323,18 @@ function cacheGet(key){
     q.onsuccess=function(){ res(q.result||null); }; q.onerror=function(){ res(null); };
   }); }).catch(function(){ return null; });
 }
-function cachePut(no, key, blob){
+function cachePut(prefix, key, blob){
   memCache[key]=blob;
   return idb().then(function(db){ return new Promise(function(res){
     var tx=db.transaction('audio','readwrite'), st=tx.objectStore('audio');
     st.put(blob,key);
     var c=st.openKeyCursor();                       // 같은 책의 옛 버전 삭제
-    c.onsuccess=function(){ var cur=c.result; if(!cur) return; if(String(cur.key).indexOf(no+'_')===0 && cur.key!==key) st.delete(cur.key); cur.continue(); };
+    c.onsuccess=function(){ var cur=c.result; if(!cur) return; if(String(cur.key).indexOf(prefix)===0 && cur.key!==key) st.delete(cur.key); cur.continue(); };
     tx.oncomplete=function(){ res(); }; tx.onerror=function(){ res(); };
   }); }).catch(function(){});
 }
-function download(no, onProgress){
-  return fetch(WORKER+'/audio/'+no+'.mp3', {headers:{Authorization:'Bearer '+S.token}}).then(function(r){
+function download(no, onProgress, ch){
+  return fetch(WORKER+'/audio/'+no+(ch?'/'+ch:'')+'.mp3', {headers:{Authorization:'Bearer '+S.token}}).then(function(r){
     if (r.status===401){ forceLogout('다시 내 번호를 눌러 주세요'); throw new Error('auth'); }
     if (!r.ok) throw new Error('http'+r.status);
     var total=parseInt(r.headers.get('Content-Length')||'0',10);
@@ -340,7 +365,7 @@ document.addEventListener('visibilitychange', function(){
 function forceLogout(msg){ logout(msg); }
 function logout(msg){
   if (S.run && A && S.screen==='#scrPlay') saveProgress(false);
-  stopAudio(); S.token=''; S.sid=''; S.name=''; S.book=null; S.run=null; S.warned=false;
+  stopAudio(); S.token=''; S.sid=''; S.name=''; S.book=null; S.run=null; S.cp=null; S.warned=false;
   $('#who').style.display='none';
   pads.login.clear(); pads.login.msg(msg||'',!!msg); pads.login.lock(false);
   pads.book.clear(); pads.book.msg('');
@@ -368,7 +393,7 @@ function doLogin(num){
    책 번호 → 확인 → 분기
 ============================================================ */
 function toBookEntry(){
-  stopAudio(); S.book=null; S.run=null;
+  stopAudio(); S.book=null; S.run=null; S.cp=null;
   $('#hello').textContent = (S.name ? S.name+'님, 안녕하세요' : '안녕하세요');
   pads.book.clear(); pads.book.msg(''); pads.book.lock(false);
   show('#scrBook');
@@ -414,6 +439,7 @@ $('#btnYes').addEventListener('click', function(){
     $('#rrSub').textContent='지금까지 '+(p.completedRuns||1)+'번 읽었어요. 다시 읽을까요?';
     show('#scrReread'); return;
   }
+  if (isChap()){ initChapState(p); showChapters(); return; }
   if (p && p.status==='inProgress' && p.audioVer===b.audioVer && p.lastPosSec>=3){
     $('#rsTitle').textContent=b.title;
     $('#rsSub').textContent=fmt(p.lastPosSec)+' 까지 들었어요. 이어서 들을까요?';
@@ -424,6 +450,7 @@ $('#btnYes').addEventListener('click', function(){
 });
 $('#btnReread').addEventListener('click', function(){
   var p=S.book.progress;
+  if (isChap()){ S.cp={ runNo:(p.completedRuns||1)+1, completedRuns:(p.completedRuns||1), startedAt:Date.now(), chap:{}, curCh:1 }; showChapters(); return; }
   beginRun({ runNo:(p.completedRuns||1)+1, completedRuns:(p.completedRuns||1), startPos:0, played:0 });
 });
 $('#btnContinue').addEventListener('click', function(){
@@ -439,18 +466,95 @@ $('#btnOther2').addEventListener('click', toBookEntry);
 $('#btnEnd').addEventListener('click', function(){ logout(''); });
 
 /* ============================================================
+   챕터북: 챕터 목록 → 챕터 듣기 → 다음 챕터 (모든 챕터를 들어야 책 한 권 완료)
+============================================================ */
+function isChap(){ return !!(S.book && S.book.chapters>=2); }
+function initChapState(p){
+  var b=S.book, inProg=!!(p && p.status==='inProgress'), same=inProg && p.audioVer===b.audioVer, chap={};
+  if (inProg && p.chapters) Object.keys(p.chapters).forEach(function(k){
+    var c=p.chapters[k]||{}; chap[k]={ done:c.done===true, playedSec:c.playedSec||0, lastPosSec: same ? (c.lastPosSec||0) : 0 };
+  });
+  S.cp={ runNo: p ? (inProg ? p.runNo : (p.completedRuns||0)+1) : 1, completedRuns: p ? (p.completedRuns||0) : 0,
+         startedAt: (inProg && p.startedAt) || Date.now(), chap:chap, curCh: inProg ? (p.curCh||1) : 1 };
+}
+function cpDoneCount(){ var n=0; if(S.cp) for (var i=1;i<=S.book.chapters;i++) if (S.cp.chap[i] && S.cp.chap[i].done) n++; return n; }
+function showChapters(){
+  var b=S.book, list=$('#chList'); list.innerHTML='';
+  $('#chTitle').textContent=b.title;
+  for (var i=1;i<=b.chapters;i++){ (function(i){
+    var c=S.cp.chap[i], el=document.createElement('button'); el.type='button';
+    el.className='chitem'+(c&&c.done?' done':'');
+    var st = c&&c.done ? '✓ 다 들었어요' : (c&&c.lastPosSec>=3 ? fmt(c.lastPosSec)+' 까지 · 이어서' : '');
+    el.innerHTML='<span>'+i+'장</span><span class="st">'+st+'</span>';
+    el.addEventListener('click', function(){ startChapter(i); });
+    list.appendChild(el);
+  })(i); }
+  S.run=null; stopAudio(); show('#scrChapters');
+}
+function startChapter(ch){
+  var c=S.cp.chap[ch], done=!!(c&&c.done);
+  beginRun({ runNo:S.cp.runNo, completedRuns:S.cp.completedRuns, startedAt:S.cp.startedAt, ch:ch,
+             startPos: (!done && c && c.lastPosSec>=3) ? Math.max(0,c.lastPosSec-2) : 0,
+             played: (!done && c) ? (c.playedSec||0) : 0, done:done });
+}
+/* 지금 듣는 챕터의 상태를 S.cp에 반영 */
+function cpSync(done){
+  var r=S.run, c=S.cp; if (!r || !c || !r.ch) return;
+  var cur=c.chap[r.ch] || {done:false, playedSec:0, lastPosSec:0};
+  cur.done = cur.done || !!done || !!r.done;
+  cur.playedSec = Math.round(r.played || cur.playedSec || 0);
+  cur.lastPosSec = cur.done ? 0 : (A ? Math.round(A.currentTime*10)/10 : cur.lastPosSec);
+  c.chap[r.ch]=cur; c.curCh=r.ch;
+}
+function chapBody(){
+  var b=S.book, c=S.cp, r=S.run; cpSync(false);
+  var all = cpDoneCount()>=b.chapters, sum=0, map={};
+  Object.keys(c.chap).forEach(function(k){ var x=c.chap[k]; sum+=x.playedSec||0; map[k]={done:!!x.done, playedSec:x.playedSec||0, lastPosSec:x.lastPosSec||0}; });
+  return { status: all?'completed':'inProgress', runNo:c.runNo, completedRuns: all?c.completedRuns+1:c.completedRuns,
+           step:'listen', listenDone:all, playedSec:sum, lastPosSec:(map[r.ch]||{}).lastPosSec||0,
+           audioVer:b.audioVer, startedAt:c.startedAt, chapters:map, curCh:r.ch };
+}
+function chapMarkDone(){
+  var b=S.book, r=S.run, c=S.cp, sid=S.sid, dur=Math.round(A?A.duration||0:0);
+  r.done=true; clearInterval(saveTimer); saveTimer=null; cpSync(true);
+  var all=cpDoneCount()>=b.chapters;
+  sendOrQueue({k:'p', sid:sid, no:b.no, body:chapBody()});
+  var ev1={eventId:'listen_'+b.no+'_'+c.runNo+'_'+r.ch, type:'listen', bookNo:b.no, runNo:c.runNo, chapter:r.ch, stage:b.stage||0, playedSec:Math.round(r.played), durationSec:dur, completed:true};
+  sendOrQueue({k:'l', sid:sid, id:ev1.eventId, body:ev1});
+  if (all){   // 모든 챕터를 다 들었을 때만 "읽은 책" 기록
+    var ev2={eventId:'run_'+b.no+'_'+c.runNo, type:'run', bookNo:b.no, runNo:c.runNo, stage:b.stage||0, reread:c.runNo>1, rounds:0, listenCompleted:true, followCompleted:false};
+    sendOrQueue({k:'l', sid:sid, id:ev2.eventId, body:ev2});
+  }
+}
+function showChapEnd(){
+  var b=S.book, r=S.run, ch=r?r.ch:0; if (!b || !r) return;
+  if (cpDoneCount()>=b.chapters){ S.cp=null; return showFinish(); }
+  var next=0, i;
+  for (i=ch+1;i<=b.chapters && !next;i++) if (!(S.cp.chap[i]&&S.cp.chap[i].done)) next=i;
+  for (i=1;i<ch && !next;i++) if (!(S.cp.chap[i]&&S.cp.chap[i].done)) next=i;
+  S.nextCh=next; stopAudio(); S.run=null;
+  $('#ceHead').textContent=ch+'장을 다 들었어요'; $('#ceTitle').textContent=b.title;
+  var nb=$('#btnNextCh'); nb.style.display=next?'':'none'; nb.textContent = next>ch ? '다음 챕터 듣기' : '안 들은 챕터 듣기';
+  show('#scrChapEnd');
+}
+$('#btnNextCh').addEventListener('click', function(){ if (S.nextCh) startChapter(S.nextCh); });
+$('#btnChList').addEventListener('click', showChapters);
+$('#btnChOther').addEventListener('click', toBookEntry);
+$('#btnChStop').addEventListener('click', function(){ logout(''); });
+
+/* ============================================================
    음원 준비 → 듣기
 ============================================================ */
 function beginRun(o){
   o.startedAt = o.startedAt || Date.now();
   S.run = o;
-  var b=S.book, key=b.no+'_'+b.audioVer;
+  var b=S.book, ch=o.ch||0, key=ch ? b.no+'_'+ch+'_'+b.audioVer : b.no+'_'+b.audioVer, prefix=ch ? b.no+'_'+ch+'_' : b.no+'_';
   S.busy=true; $('#prepBar').style.width='0'; $('#prepText').textContent='음원을 준비하고 있어요'; show('#scrPrep');
   cacheGet(key).then(function(blob){
     if (blob) return blob;
     $('#prepText').textContent='음원을 받고 있어요';
-    return download(b.no, function(f){ $('#prepBar').style.width=Math.round(f*100)+'%'; }).then(function(bl){
-      $('#prepBar').style.width='100%'; return cachePut(b.no,key,bl).then(function(){ return bl; });
+    return download(b.no, function(f){ $('#prepBar').style.width=Math.round(f*100)+'%'; }, ch).then(function(bl){
+      $('#prepBar').style.width='100%'; return cachePut(prefix,key,bl).then(function(){ return bl; });
     });
   }).then(function(blob){
     S.busy=false; setupPlayer(blob);
@@ -458,7 +562,7 @@ function beginRun(o){
     S.busy=false;
     if (e && e.message==='auth') return;
     toast(e && e.message==='http404' ? '음원을 찾을 수 없어요. 선생님께 알려 주세요' : '음원을 받지 못했어요. 인터넷을 확인해 주세요', 4500);
-    toBookEntry();
+    if (isChap() && S.cp) showChapters(); else toBookEntry();
   });
 }
 function stopAudio(){
@@ -474,7 +578,8 @@ function setupPlayer(blob){
   function mine(fn){ return function(){ if (a===A) fn(); }; }      // 이미 닫은 재생기의 늦은 이벤트는 무시
   positioned=false; lastT=null;
   $('#plTitle').textContent=b.title; paintCover($('#cvPlay'), b);
-  $('#plTag').textContent = S.run.runNo>1 ? ('다시 읽기 · '+S.run.runNo+'번째') : tagText(b);
+  if (S.run.ch) $('#plTag').textContent = S.run.ch+'장 / 총 '+b.chapters+'장'+(S.run.runNo>1 ? ' · 다시 읽기 '+S.run.runNo+'번째' : '');
+  else $('#plTag').textContent = S.run.runNo>1 ? ('다시 읽기 · '+S.run.runNo+'번째') : tagText(b);
   $('#plBar').style.width='0'; $('#plNow').textContent='0:00'; $('#plTotal').textContent=''; setPlayIcon(false);
   $('#plHint').textContent='끝까지 들으면 읽은 책으로 기록돼요';
   var st0=$('#btnStop'); st0.textContent='그만 듣기'; st0.className='linkbtn';
@@ -523,12 +628,18 @@ $('#btnPlay').addEventListener('click', function(){
   A.play().catch(function(){ toast('재생할 수 없어요. 다시 눌러 보세요'); });
 });
 $('#btnStop').addEventListener('click', function(){
+  if (isChap() && S.run){
+    if (A && !A.paused) A.pause();
+    if (S.run.done){ showChapEnd(); return; }            // 이 챕터는 다 들음 → 다음 챕터 안내
+    saveProgress(false); showChapters(); return;          // 중간에 그만둠: 위치만 저장하고 챕터 목록으로
+  }
   if (S.run && S.run.done){ showFinish(); return; }        // 다 들은 뒤의 [끝내기]
   if (A && !A.paused) A.pause();
   saveProgress(false); toBookEntry();                       // 중간에 그만둠: 위치만 저장
 });
 
 function progressBody(done){
+  if (isChap()) return chapBody();
   var b=S.book, r=S.run; done = done || !!r.done;
   return {
     status: done?'completed':'inProgress', runNo:r.runNo,
@@ -546,8 +657,13 @@ function onEnded(){
   playing=false; unlockScreen(); clearInterval(saveTimer);
   $('#scrPlay').classList.remove('playing'); setPlayIcon(false);
   var dur=A.duration||0;
-  if (S.run.done) return showFinish();
-  if (S.run.played >= dur*DONE_RATIO){ markDone(); return showFinish(); }
+  if (isChap()){
+    if (S.run.done) return showChapEnd();
+    if (S.run.played >= dur*DONE_RATIO){ markDone(); return showChapEnd(); }
+  } else {
+    if (S.run.done) return showFinish();
+    if (S.run.played >= dur*DONE_RATIO){ markDone(); return showFinish(); }
+  }
   // 건너뛰어서 끝에 온 경우: 인정하지 않고 처음부터
   toast('끝까지 잘 듣지 못했어요. 처음부터 다시 들어요',4500);
   S.run.played=0; S.run.startPos=0; positioned=false; lastT=null;
@@ -557,6 +673,7 @@ function onEnded(){
 /* "다 들음" 기록: 8/9(약 89%)에 도달하는 순간 한 번만 저장 (끝나는 음악 전에 나가도 기록됨) */
 function markDone(){
   var b=S.book, r=S.run; if (!r || r.done) return;
+  if (isChap()) return chapMarkDone();
   r.done=true; clearInterval(saveTimer); saveTimer=null;
   var sid=S.sid, dur=Math.round(A?A.duration||0:0);
   var ev1={eventId:'listen_'+b.no+'_'+r.runNo, type:'listen', bookNo:b.no, runNo:r.runNo, stage:b.stage||0, playedSec:Math.round(r.played), durationSec:dur, completed:true};
